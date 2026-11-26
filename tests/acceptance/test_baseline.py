@@ -743,3 +743,78 @@ def test_r2_check_rerun_output_schema_valid(T):
     bom = json.loads(rd(T, "re.json"))
     assert all(prop(c, "cbom-scout:baseline") is None for c in bom["components"])
     _validator().validate(bom)
+
+
+# ================================================================== 3회차: D4~D6 수정 경로 회귀
+def test_r3_property_without_name(T):
+    """properties 항목에 name 이 없어도(값만 있음) 트레이스백 없이 정상 비교한다."""
+    w(T, "app/a.py", F0)
+    w(T, "base.json", json.dumps({"bomFormat": "CycloneDX", "components": [
+        _foreign(**{"properties": [{"value": "x"}]})]}))
+    r = C(T)
+    assert "Traceback" not in r.err, r
+    assert r.code == 0, r
+
+
+def test_r3_compare_error_leaves_no_outputs(T):
+    """재평가 단계(compare)에서 기준선 오류가 나도 공통 오류 기대: 2, '기준선'+경로, 출력 파일·STEP_SUMMARY 없음."""
+    w(T, "app/a.py", F0)
+    c = _foreign("app/z.py", "RSA-2048")
+    c["cryptoProperties"]["algorithmProperties"] = {"parameterSetIdentifier": "²"}
+    w(T, "base.json", json.dumps({"bomFormat": "CycloneDX", "components": [c]}))
+    summ = T / "summary.md"
+    r = C(T, "--markdown", "r.md", "--html", "r.html", env={"GITHUB_STEP_SUMMARY": str(summ)})
+    assert "Traceback" not in r.err, r
+    assert r.code in (0, 2), r
+    if r.code == 2:
+        assert "기준선" in r.err and "base.json" in r.err, r
+        for f in ("cur.json", "r.md", "r.html"):
+            assert not (T / f).exists(), f
+        assert not summ.exists() or summ.read_text(encoding="utf-8") == ""
+
+
+def test_r3_resolved_without_bom_ref_no_internal_ref_leak(T):
+    """bom-ref 없는 기준선의 해결 항목: 리포트에 원래 이름·위치가 나오고 내부 임시 ref(baseline/N)가 새지 않는다."""
+    w(T, "app/a.py", F0)
+    w(T, "base.json", json.dumps({"bomFormat": "CycloneDX", "specVersion": "1.6",
+                                  "components": [_foreign(), _foreign("app/z.py", "sha1")]}))
+    r = C(T, "--markdown", "r.md", "--html", "r.html", "-v")
+    assert r.code == 0, r
+    md, html = rd(T, "r.md"), rd(T, "r.html")
+    rs = res_sec(md)
+    assert "sha1" in rs and "app/z.py" in rs, md
+    assert "md5" not in rs.lower(), md
+    for text in (md, html, r.err, rd(T, "cur.json")):
+        assert "baseline/0" not in text and "baseline/1" not in text
+    _validator().validate(json.loads(rd(T, "cur.json")))
+
+
+@pytest.mark.parametrize("content", ["null", "5", "", '"CycloneDX"', "true"])
+def test_r3_non_object_json_baseline(T, content):
+    """최상위가 객체가 아닌 JSON·빈 파일 → AC-16~19 공통 기대."""
+    w(T, "app/a.py", F0)
+    w(T, "base.json", content)
+    r = C(T)
+    assert r.code == 2, r
+    assert "기준선" in r.err and "base.json" in r.err and "Traceback" not in r.err, r
+    assert not (T / "cur.json").exists()
+
+
+def test_r3_non_utf8_baseline(T):
+    """UTF-8 이 아닌(CP949) 기준선 → 트레이스백 없이 2."""
+    w(T, "app/a.py", F0)
+    (T / "base.json").write_bytes('{"bomFormat":"CycloneDX","metadata":{"x":"한글"},"components":[]}'.encode("cp949"))
+    r = C(T)
+    assert r.code == 2, r
+    assert "기준선" in r.err and "Traceback" not in r.err, r
+    assert not (T / "cur.json").exists()
+
+
+def test_r3_duplicate_unit_in_two_baseline_components(T):
+    """같은 발견 단위(MD5@app/z.py)가 기준선 두 구성요소에 있어도 해결은 1건."""
+    w(T, "app/a.py", F0)
+    w(T, "base.json", json.dumps({"bomFormat": "CycloneDX", "components": [
+        _foreign(), _foreign("app/z.py", "MD5", **{"bom-ref": "p"}), _foreign("app/z.py", "md5", **{"bom-ref": "q"})]}))
+    r = C(T)
+    assert r.code == 0, r
+    assert summary(r)[3:] == ("1", "1", "통과"), r
