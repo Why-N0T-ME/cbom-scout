@@ -269,3 +269,38 @@ def test_merge_rejects_baseline(ws):
     with pytest.raises(SystemExit) as e:
         main(["merge", "a.json", "-o", "m.json", "--baseline", "b.json"])
     assert e.value.code == 2
+
+
+@pytest.mark.parametrize("bad", [
+    {"evidence": "x"}, {"cryptoProperties": "x"}, {"name": 5, "cryptoProperties": {"assetType": "algorithm"}},
+    {"evidence": {"occurrences": [{"location": None}]}}, {"evidence": {"occurrences": ["a.py"]}},
+    {"properties": "x"}, {"cryptoProperties": {"algorithmProperties": {"mode": 1}}},
+])
+def test_malformed_component_is_baseline_error(ws, capsys, bad):
+    write(ws / "app/a.py", MD5)
+    c = {"type": "cryptographic-asset", "name": "md5", **bad}
+    write(ws / "base.json", json.dumps({"bomFormat": "CycloneDX", "components": [c]}))
+    assert run() == 2
+    err = capsys.readouterr().err
+    assert "components[0]" in err and "Traceback" not in err
+    assert not os.path.exists("cur.json")
+
+
+def test_baseline_with_utf8_bom_accepted(ws):
+    write(ws / "app/a.py", MD5)
+    base()
+    (ws / "base.json").write_bytes(b"\xef\xbb\xbf" + (ws / "base.json").read_bytes())
+    assert run() == 0
+
+
+def test_check_clears_stale_baseline_marks(ws):
+    write(ws / "app/a.py", MD5)
+    base()
+    write(ws / "app/b.py", MD5)
+    run()
+    assert '"cbom-scout:baseline"' in read("cur.json")
+    write(ws / "pass.json", '{"name":"p","status":{},"default":{"action":"pass"}}')
+    main(["check", "cur.json", "--baseline", "base.json", "--policy", "pass.json", "-o", "re.json"])
+    assert "cbom-scout:baseline" not in read("re.json")
+    main(["check", "cur.json", "-o", "re2.json", "--fail-on", "never"])
+    assert "cbom-scout:baseline" not in read("re2.json")

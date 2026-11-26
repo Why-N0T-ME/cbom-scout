@@ -53,6 +53,8 @@ def _load_baseline(args) -> tuple[Optional[dict], int]:
 
 
 def _finish(bom: dict, args, baseline: Optional[dict] = None) -> int:
+    from .baseline import clear_marks
+    clear_marks(bom)   # check 입력에 남은 이전 비교 결과는 이번 평가와 무관하다
     policy = load_policy(_policy_path(args.policy))
     result = evaluate(bom, policy)
     diff = None

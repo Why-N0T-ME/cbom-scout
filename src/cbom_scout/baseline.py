@@ -15,7 +15,7 @@ import json
 import os
 import re
 from dataclasses import dataclass, field
-from .inventory import get_prop, set_prop
+from .inventory import PROP_PREFIX, get_prop, set_prop
 from .policy import ACTIONS, Result, evaluate, worst_of
 
 BASELINE_PROP = "baseline"
@@ -33,7 +33,8 @@ def load_baseline(path: str) -> dict:
     if not os.path.isfile(path):
         raise BaselineError(f"기준선 경로가 파일이 아닙니다: {path}")
     try:
-        with open(path, encoding="utf-8") as fh:
+        # utf-8-sig: PowerShell 등이 붙이는 BOM 도 허용
+        with open(path, encoding="utf-8-sig") as fh:
             bom = json.load(fh)
     except (OSError, UnicodeDecodeError) as e:
         raise BaselineError(f"기준선 파일을 읽을 수 없습니다: {path} ({e.__class__.__name__})") from None
@@ -46,7 +47,67 @@ def load_baseline(path: str) -> dict:
         bom["components"] = []
     elif not isinstance(comps, list):
         raise BaselineError(f"기준선 파일의 components 가 목록이 아닙니다: {path}")
+    for i, comp in enumerate(bom["components"]):
+        problem = _component_problem(comp)
+        if problem:
+            raise BaselineError(f"기준선 파일의 components[{i}] 형식이 올바르지 않습니다 ({problem}): {path}")
     return bom
+
+
+def _component_problem(comp) -> str:
+    """비교·재평가에 쓰는 필드의 형식만 확인한다. 문제가 없으면 ''. 값(키 등)은 메시지에 넣지 않는다."""
+    if not isinstance(comp, dict):
+        return "객체가 아님"
+    if comp.get("type") != "cryptographic-asset":
+        return ""           # 비교 대상이 아니므로 형식을 따지지 않는다
+    for k in ("name", "bom-ref"):
+        if k in comp and not isinstance(comp[k], str):
+            return f"{k} 가 문자열이 아님"
+    cp = comp.get("cryptoProperties", {})
+    if not isinstance(cp, dict):
+        return "cryptoProperties 가 객체가 아님"
+    if "assetType" in cp and not isinstance(cp["assetType"], str):
+        return "cryptoProperties.assetType 이 문자열이 아님"
+    for k in ("algorithmProperties", "relatedCryptoMaterialProperties", "protocolProperties"):
+        if k in cp and not isinstance(cp[k], dict):
+            return f"cryptoProperties.{k} 가 객체가 아님"
+    ap = cp.get("algorithmProperties", {})
+    if "mode" in ap and not isinstance(ap["mode"], str):
+        return "algorithmProperties.mode 가 문자열이 아님"
+    for k, sub in (("relatedCryptoMaterialProperties", "type"), ("protocolProperties", "type")):
+        if sub in cp.get(k, {}) and not isinstance(cp[k][sub], str):
+            return f"cryptoProperties.{k}.{sub} 가 문자열이 아님"
+    ev = comp.get("evidence", {})
+    if not isinstance(ev, dict):
+        return "evidence 가 객체가 아님"
+    occs = ev.get("occurrences", [])
+    if not isinstance(occs, list):
+        return "evidence.occurrences 가 목록이 아님"
+    for o in occs:
+        if not isinstance(o, dict):
+            return "occurrence 가 객체가 아님"
+        if "location" in o and not isinstance(o["location"], str):
+            return "occurrence.location 이 문자열이 아님"
+        if "line" in o and (isinstance(o["line"], bool) or not isinstance(o["line"], int)):
+            return "occurrence.line 이 정수가 아님"
+    props = comp.get("properties", [])
+    if not isinstance(props, list) or not all(isinstance(p, dict) for p in props):
+        return "properties 가 객체 목록이 아님"
+    return ""
+
+
+def clear_marks(bom: dict) -> None:
+    """입력 CBOM 에 남아 있던 이전 비교 결과(cbom-scout:baseline)를 지운다. 이번 평가 결과만 남긴다."""
+    name = PROP_PREFIX + BASELINE_PROP
+    for comp in bom.get("components", []):
+        props = comp.get("properties")
+        if isinstance(props, list):
+            kept = [p for p in props if not (isinstance(p, dict) and p.get("name") == name)]
+            if len(kept) != len(props):
+                if kept:
+                    comp["properties"] = kept
+                else:
+                    del comp["properties"]
 
 
 # ------------------------------------------------------------------ 식별 규칙
