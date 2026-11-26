@@ -6,6 +6,7 @@
 """
 from __future__ import annotations
 
+import datetime as dt
 import json
 import os
 import re
@@ -21,6 +22,9 @@ DOC_DATA_ONLY = {"CC-BY-4.0"}           # 코드 파일에는 쓸 수 없는 라
 CODE_EXTENSIONS = {".py", ".js", ".mjs", ".cjs", ".ts", ".tsx", ".jsx", ".java", ".kt", ".go", ".c", ".h",
                    ".cc", ".cpp", ".hpp", ".cs", ".rs", ".rb", ".php", ".swift", ".sh", ".ps1"}
 REQUIRED_FIELDS = ("path", "name", "author", "license", "source_url", "version", "retrieved", "modified")
+# 외부 파일 전용 디렉터리의 최소 목록. 매니페스트의 vendored_dirs 와 합쳐 쓴다 —
+# 매니페스트에서 지워 미등록 검사를 끄는 우회를 막는다 (허용 라이선스와 같은 이유로 코드에 둔다).
+MIN_VENDORED_DIRS = ("tests/schemas/",)
 
 # 금지 흔적 (Semgrep 규칙 라이선스). 문자열을 쪼개 두어 이 파일 자신이 걸리지 않게 한다.
 # 다른 테스트에서 이 흔적을 써야 하면 이 상수를 가져다 쓰거나 같은 방식으로 조립한다.
@@ -64,21 +68,25 @@ def check_fields(manifest: dict) -> list[str]:
             problems.append(f"{label}: 항목은 객체여야 합니다")
             continue
         for f in REQUIRED_FIELDS:
-            if f not in entry or entry[f] in ("", None):
+            v = entry.get(f)
+            if f not in entry or v is None or (isinstance(v, str) and not v.strip()):
                 problems.append(f"{label}: 필수 항목 '{f}' 가 없습니다")
         path = entry.get("path", "")
-        if isinstance(path, str) and ("\\" in path or path.startswith(("/", "./")) or ".." in path.split("/")):
+        if "path" in entry and not isinstance(path, str):
+            problems.append(f"{label}: path 는 문자열이어야 합니다")
+        elif isinstance(path, str) and ("\\" in path or path.startswith(("/", "./")) or ".." in path.split("/")):
             problems.append(f"{label}: path 는 저장소 루트 기준 '/' 구분 상대경로여야 합니다")
         if path in seen:
             problems.append(f"{label}: 같은 path 가 두 번 등록됐습니다")
         seen.add(path)
         if "modified" in entry and not isinstance(entry["modified"], bool):
             problems.append(f"{label}: modified 는 true/false 여야 합니다")
-        if entry.get("modified") is True and not entry.get("modifications"):
-            problems.append(f"{label}: modified 가 true 이면 'modifications'(무엇을 고쳤는지)가 필요합니다")
+        mods = entry.get("modifications")
+        if entry.get("modified") is True and not (isinstance(mods, str) and mods.strip()):
+            problems.append(f"{label}: modified 가 true 이면 'modifications'(무엇을 고쳤는지, 문자열)가 필요합니다")
         retrieved = entry.get("retrieved")
-        if retrieved and not re.fullmatch(r"\d{4}-\d{2}-\d{2}", str(retrieved)):
-            problems.append(f"{label}: retrieved 는 YYYY-MM-DD 형식이어야 합니다")
+        if retrieved not in (None, "") and not _is_real_date(retrieved):
+            problems.append(f"{label}: retrieved 는 실제 날짜이며 YYYY-MM-DD 형식이어야 합니다")
         url = entry.get("source_url")
         if url and not str(url).startswith(("https://", "http://")):
             problems.append(f"{label}: source_url 은 http(s) 주소여야 합니다")
@@ -86,10 +94,23 @@ def check_fields(manifest: dict) -> list[str]:
     return problems
 
 
+def _is_real_date(value) -> bool:
+    if not isinstance(value, str) or not re.fullmatch(r"\d{4}-\d{2}-\d{2}", value):
+        return False
+    try:
+        dt.date.fromisoformat(value)
+    except ValueError:
+        return False
+    return True
+
+
 def check_license(entry: dict, label: str) -> list[str]:
-    lic = str(entry.get("license") or "").strip()
-    if not lic:
-        return []  # 필수 항목 누락으로 이미 보고됨
+    raw = entry.get("license")
+    if raw is None or (isinstance(raw, str) and not raw.strip()):
+        return [f"{label}: 라이선스가 비어 있습니다 — 알 수 없는 라이선스는 넣을 수 없습니다"]
+    if not isinstance(raw, str):
+        return [f"{label}: 라이선스는 SPDX ID 문자열이어야 합니다"]
+    lic = raw.strip()
     if FORBIDDEN_LICENSE_RE.match(lic):
         return [f"{label}: 라이선스 '{lic}' 는 이 저장소에 넣을 수 없습니다 (금지: Semgrep 규칙 라이선스, 알 수 없음, 카피레프트)"]
     if lic not in ALLOWED_LICENSES:
@@ -114,10 +135,15 @@ def check_paths_exist(manifest: dict, root: str) -> list[str]:
 def check_vendored_registered(manifest: dict, root: str) -> list[str]:
     registered = {e.get("path") for e in manifest.get("files", []) if isinstance(e, dict)}
     problems = []
-    for vdir in manifest.get("vendored_dirs", []):
+    vdirs = list(MIN_VENDORED_DIRS)
+    for v in manifest.get("vendored_dirs", []) or []:
+        if isinstance(v, str) and v.strip("/") not in {d.strip("/") for d in vdirs}:
+            vdirs.append(v)
+    for vdir in vdirs:
         base = os.path.join(root, *vdir.strip("/").split("/"))
         if not os.path.isdir(base):
-            problems.append(f"{vdir}: vendored_dirs 에 있지만 디렉터리가 없습니다")
+            if vdir not in MIN_VENDORED_DIRS:   # 최소 목록은 아직 없을 수 있다 (새 저장소·임시 저장소)
+                problems.append(f"{vdir}: vendored_dirs 에 있지만 디렉터리가 없습니다")
             continue
         for d, dirs, files in os.walk(base):
             dirs[:] = [x for x in dirs if x != "__pycache__"]
@@ -187,17 +213,35 @@ def iter_scan_files(root: str, dirs: Iterable[str] = MARKER_SCAN_DIRS) -> Iterab
                 yield os.path.join(d, f)
 
 
+def read_text_any(path: str) -> str | None:
+    """UTF-8 이 기본이고, BOM 이나 NUL 바이트로 UTF-16/32 를 알아본다 (흔적 검사 우회 방지)."""
+    try:
+        with open(path, "rb") as fh:
+            data = fh.read()
+    except OSError:
+        return None
+    for bom, enc in ((b"\xff\xfe\x00\x00", "utf-32"), (b"\x00\x00\xfe\xff", "utf-32"),
+                     (b"\xff\xfe", "utf-16"), (b"\xfe\xff", "utf-16"), (b"\xef\xbb\xbf", "utf-8-sig")):
+        if data.startswith(bom):
+            return data.decode(enc, errors="ignore")
+    head = data[:4096]
+    if head.count(b"\x00") > len(head) // 4:      # BOM 없는 UTF-16
+        even_nul = head[0::2].count(b"\x00")
+        odd_nul = head[1::2].count(b"\x00")
+        return data.decode("utf-16-be" if even_nul > odd_nul else "utf-16-le", errors="ignore")
+    return data.decode("utf-8", errors="ignore")
+
+
 def check_semgrep_markers(root: str, dirs: Iterable[str] = MARKER_SCAN_DIRS) -> list[str]:
     problems = []
     for path in iter_scan_files(root, dirs):
         rel = to_rel(path, root)
         if rel.startswith(MARKER_EXCLUDE_PREFIXES):
             continue
-        try:
-            with open(path, encoding="utf-8", errors="ignore") as fh:
-                text = fh.read().lower()
-        except OSError:
+        text = read_text_any(path)
+        if text is None:
             continue
+        text = text.lower()
         for marker in SEMGREP_MARKERS:
             if marker in text:
                 line = text[: text.index(marker)].count("\n") + 1
