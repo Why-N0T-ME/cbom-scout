@@ -672,3 +672,74 @@ def test_ac32_check_pass_component_has_no_baseline_prop(T):
     for c in bom["components"]:
         if prop(c, "cbom-scout:policy-action") == "pass":
             assert prop(c, "cbom-scout:baseline") is None, c["name"]
+
+
+# ------------------------------------------------------------------ 2회차 추가 점검
+def _foreign(occ_loc="app/a.py", name="md5", **extra):
+    c = {"type": "cryptographic-asset", "name": name,
+         "cryptoProperties": {"assetType": "algorithm", "algorithmProperties": {"primitive": "hash"}},
+         "evidence": {"occurrences": [{"location": occ_loc}]}}
+    c.update(extra)
+    return c
+
+
+def test_r2_foreign_baseline_without_bom_ref(T):
+    """AC-21 취지: 다른 도구가 만든 기준선. CycloneDX 1.6 에서 bom-ref 는 선택 필드이므로 없어도 맞춰야 한다."""
+    w(T, "app/a.py", F0)
+    w(T, "base.json", json.dumps({"bomFormat": "CycloneDX", "specVersion": "1.6", "components": [_foreign()]}))
+    r = C(T)
+    assert "Traceback" not in r.err, r
+    assert r.code == 0, r
+
+
+def test_r2_foreign_baseline_without_bom_ref_resolved(T):
+    """bom-ref 없는 기준선 구성요소가 현재 없으면 해결로 보고, 트레이스백이 없어야 한다."""
+    w(T, "app/a.py", F0)
+    w(T, "base.json", json.dumps({"bomFormat": "CycloneDX", "specVersion": "1.6",
+                                  "components": [_foreign(), _foreign("app/z.py", "sha1")]}))
+    r = C(T)
+    assert "Traceback" not in r.err, r
+    assert r.code == 0, r
+    assert "해결 1건" in r.err, r
+
+
+@pytest.mark.parametrize("props", [
+    [{"name": "cbom-scout:scanners", "value": 5}],
+    [{"name": "cbom-scout:status", "value": ["broken"]}],
+])
+def test_r2_malformed_property_value_no_traceback(T, props):
+    """D3 와 같은 계열: properties 의 value 가 문자열이 아닌 기준선 — 트레이스백 없이 끝나야 한다 (오류면 2)."""
+    w(T, "app/a.py", F0)
+    c = _foreign("app/a.py:2", **{"bom-ref": "x", "properties": props})
+    w(T, "base.json", json.dumps({"bomFormat": "CycloneDX", "components": [c]}))
+    r = C(T)
+    assert "Traceback" not in r.err, r
+    assert r.code in (0, 2), r
+    if r.code == 2:
+        assert "기준선" in r.err and not (T / "cur.json").exists()
+
+
+def test_r2_duplicate_bom_ref_resolved_count(T):
+    """bom-ref 가 중복된 기준선(스키마상 잘못된 입력). 해결 건수가 부풀려지지 않거나 오류 2 여야 한다."""
+    w(T, "app/a.py", F0)
+    w(T, "base.json", json.dumps({"bomFormat": "CycloneDX", "components": [
+        _foreign(**{"bom-ref": "x"}), _foreign("app/z.py", "sha1", **{"bom-ref": "x"})]}))
+    r = C(T)
+    assert "Traceback" not in r.err, r
+    if r.code != 2:
+        assert r.code == 0, r
+        assert "해결 1건" in r.err, r
+
+
+def test_r2_check_rerun_output_schema_valid(T):
+    """D1 수정 경로: check --baseline 재평가 출력도 CycloneDX 1.6 스키마를 통과한다."""
+    w(T, "app/a.py", F0)
+    mkbase(T)
+    w(T, "app/b.py", F0)
+    C(T)
+    w(T, "pass.json", json.dumps({"name": "allpass", "status": {}, "default": {"action": "pass"}}))
+    r = cli(T, "check", "cur.json", "--baseline", "base.json", "--policy", "pass.json", "-o", "re.json")
+    assert r.code == 0, r
+    bom = json.loads(rd(T, "re.json"))
+    assert all(prop(c, "cbom-scout:baseline") is None for c in bom["components"])
+    _validator().validate(bom)
