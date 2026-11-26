@@ -1,8 +1,15 @@
 """소스코드·설정 파일 정적 스캐너.
 
-언어별 암호 API 호출 패턴을 정규식으로 찾아 알고리즘·키 길이·곡선·모드를 뽑는다.
-정확한 데이터 흐름 분석은 하지 않으므로 '어디에 무엇이 쓰이는지'를 빠르게
-훑는 1차 인벤토리 용도다. 언어별 정밀 분석이 필요하면 CBOMkit(sonar-cryptography)
+기본(auto) 엔진:
+- Python 은 구문 트리로 분석한다(scanners/pyast.py, API 지식은 data/python_api.json).
+  주석·docstring·문자열 속 API 는 무시하고, import 별칭과 같은 파일 안 상수·기본값 인자를
+  따라가 알고리즘·키 길이를 해석한다. 구문 오류 파일은 정규식으로 대체한다.
+- Java·Go·JS/TS·C/C++·C# 은 아래 정규식 규칙을 쓰되, 매치 시작이 주석·문자열 안이면 버린다
+  (scanners/context.py).
+- 설정 파일은 줄 시작에 고정된 정규식 규칙을 쓴다.
+regex 엔진은 예전처럼 모든 언어를 줄 단위 정규식으로만 본다 (--engine regex).
+
+파일을 넘는 데이터 흐름은 분석하지 않는다. 언어별 정밀 분석이 필요하면 CBOMkit(sonar-cryptography)
 결과를 `cbom-scout merge` 로 합치면 된다.
 """
 from __future__ import annotations
@@ -13,7 +20,10 @@ import re
 from dataclasses import dataclass
 from typing import Callable, Iterable, Iterator, Optional
 
+from ..detection import detection, scope_fn_for
 from ..inventory import Inventory
+from .context import CODE, STRING, blank_comments, context_maps, lang_of
+from .pyast import analyze
 
 SKIP_DIRS = {".git", "node_modules", "venv", ".venv", "env", "__pycache__", "dist", "build",
              "target", ".tox", ".mypy_cache", ".pytest_cache", "vendor", "third_party", ".idea"}
@@ -239,16 +249,43 @@ def _c_evp_cipher(m, lines, idx):
     return parse_cipher_spec(m.group("spec"))
 
 
-PQC_STR = (r"[\"'](?P<alg>ML-KEM-(?:512|768|1024)|ML-DSA-(?:44|65|87)|SLH-DSA[\w-]*|"
-           r"X25519MLKEM768|SecP256r1MLKEM768|SecP384r1MLKEM1024|Kyber-?\d+|Dilithium-?\d|Falcon-\d+|"
-           r"SPHINCS\+[\w-]*|SMAUG-T\d*|HAETAE\d*|AIMer[\w-]*|NTRU\+[\w-]*|HQC-\d+)[\"']")
+PQC_NAMES = (r"ML-KEM-(?:512|768|1024)|ML-DSA-(?:44|65|87)|SLH-DSA[\w-]*|"
+             r"X25519MLKEM768|SecP256r1MLKEM768|SecP384r1MLKEM1024|Kyber-?\d+|Dilithium-?\d|Falcon-\d+|"
+             r"SPHINCS\+[\w-]*|SMAUG-T\d*|HAETAE\d*|AIMer[\w-]*|NTRU\+[\w-]*|HQC-\d+")
+# 기존(regex 엔진) 규칙: 문자열 리터럴 전체가 PQC 이름일 때
+PQC_STR = rf"[\"'](?P<alg>{PQC_NAMES})[\"']"
+# 문맥 인식 엔진: 문자열 리터럴 안 어디든 단어 경계로 (예: "ML-KEM-768 지원 예정")
+PQC_IN_STR = re.compile(rf"(?<![\w-])(?P<alg>{PQC_NAMES})(?!\w)")
 
-# (적용 대상 확장자 집합, 정규식, 처리기)
-RULES: list[tuple[set, re.Pattern, Handler]] = []
+
+@dataclass
+class Rule:
+    exts: set
+    rx: re.Pattern
+    handler: Handler
+    kind: str = "api"            # api(암호 API 호출) | pqc(PQC 문자열) | config(설정 파일)
+    symbol: Optional[str] = None  # occurrence.symbol. 없으면 매치 텍스트의 앞 식별자
 
 
-def rule(exts: Iterable[str], pattern: str, handler: Handler, flags: int = 0) -> None:
-    RULES.append((set(exts), re.compile(pattern, flags), handler))
+RULES: list[Rule] = []
+
+
+def rule(exts: Iterable[str], pattern: str, handler: Handler, flags: int = 0, *,
+         kind: str = "api", symbol: Optional[str] = None) -> None:
+    RULES.append(Rule(set(exts), re.compile(pattern, flags), handler, kind, symbol))
+
+
+_SYMBOL_RE = re.compile(r"[A-Za-z_][\w.]*")
+
+
+def rule_symbol(r: Rule, m: re.Match) -> Optional[str]:
+    """탐지 근거 API 이름 (occurrence.symbol). PQC 문자열·설정 파일 규칙은 없음."""
+    if r.kind != "api":
+        return None
+    if r.symbol:
+        return r.symbol
+    mm = _SYMBOL_RE.match(re.sub(r"^new\s+", "", m.group(0)))
+    return mm.group(0).rstrip(".") if mm else None
 
 
 PY, JAVA, GO, JS, C, CS, CFG = (LANG_EXT[k] for k in ("python", "java", "go", "js", "c", "csharp", "config"))
@@ -306,7 +343,8 @@ rule(JS, r"generateKeyPair(?:Sync)?\(\s*['\"](?P<alg>rsa|rsa-pss|dsa|ec|ed25519|
 rule(JS, r"createHash\(\s*['\"](?P<alg>[\w-]+)['\"]", _group("digest"))
 rule(JS, r"createHmac\(\s*['\"](?P<alg>[\w-]+)['\"]", lambda m, l, i: [Hit("HMAC", "tag"), Hit(m.group("alg"), "digest")])
 rule(JS, r"create(?:De)?[Cc]ipheriv\(\s*['\"](?P<spec>[\w-]+)['\"]", lambda m, l, i: parse_cipher_spec(m.group("spec")))
-rule(JS, r"name\s*:\s*['\"](?P<alg>RSA-OAEP|RSASSA-PKCS1-v1_5|RSA-PSS|ECDSA|ECDH|Ed25519|X25519|AES-GCM|AES-CBC|AES-CTR)['\"]", _webcrypto)
+rule(JS, r"name\s*:\s*['\"](?P<alg>RSA-OAEP|RSASSA-PKCS1-v1_5|RSA-PSS|ECDSA|ECDH|Ed25519|X25519|AES-GCM|AES-CBC|AES-CTR)['\"]", _webcrypto,
+     symbol="crypto.subtle")
 
 # ---- C / C++ (OpenSSL) ----------------------------------------------------------
 rule(C, r"\bRSA_generate_key(?:_ex)?\(", lambda m, l, i: [Hit("RSA", "keygen")])
@@ -325,13 +363,14 @@ rule(CS, r"\b(?P<alg>TripleDES|DES|Aes|AesGcm)\.Create\(|new\s+(?P<alg2>AesGcm)\
      lambda m, l, i: parse_cipher_spec(("3des" if (m.group("alg") or "") == "TripleDES" else (m.group("alg") or m.group("alg2") or "aes")).replace("AesGcm", "aes-gcm")))
 
 # ---- 공통: PQC 알고리즘 문자열 (liboqs, BouncyCastle 등) ---------------------------
-rule(ALL_CODE, PQC_STR, lambda m, l, i: [Hit(pqc_name(m.group("alg")), None)])
+rule(ALL_CODE, PQC_STR, lambda m, l, i: [Hit(pqc_name(m.group("alg")), None)], kind="pqc")
 
 # ---- 설정 파일 --------------------------------------------------------------------
-rule(CFG | {""}, r"^\s*(?:KexAlgorithms|HostKeyAlgorithms|PubkeyAcceptedAlgorithms|PubkeyAcceptedKeyTypes)\s+(?P<list>\S+)", _ssh_list)
-rule(CFG | {""}, r"^\s*ssl_ecdh_curve\s+(?P<list>[^;]+);", lambda m, l, i: _tls_groups(m.group("list")))
+rule(CFG | {""}, r"^\s*(?:KexAlgorithms|HostKeyAlgorithms|PubkeyAcceptedAlgorithms|PubkeyAcceptedKeyTypes)\s+(?P<list>\S+)", _ssh_list, kind="config")
+rule(CFG | {""}, r"^\s*ssl_ecdh_curve\s+(?P<list>[^;]+);", lambda m, l, i: _tls_groups(m.group("list")),
+     kind="config")
 rule({".cnf", ".conf", ""}, r"(?i)^\s*(?:Groups|Curves)\s*=\s*(?P<list>[\w:-]+)\s*$",
-     lambda m, l, i: _tls_groups(m.group("list")))
+     lambda m, l, i: _tls_groups(m.group("list")), kind="config")
 
 # ---- 저장소 안의 비밀키 (모든 텍스트 파일) -----------------------------------------
 PRIVATE_KEY_RE = re.compile(r"-----BEGIN (?P<kind>RSA |EC |DSA |OPENSSH |ENCRYPTED )?PRIVATE KEY-----")
@@ -369,7 +408,7 @@ TLS_PROTOCOLS_RE = re.compile(r"(?i)^\s*(?:ssl_protocols|SSLProtocol)\s+(?P<list
 OLD_TLS = {"sslv2", "sslv3", "tlsv1", "tlsv1.0", "tlsv1.1"}
 
 
-def _record_tls_config(inv: Inventory, raw: str, rel: str, line: int) -> None:
+def _record_tls_config(inv: Inventory, raw: str, rel: str, line: int, det: tuple = (None, None)) -> None:
     items = [t for t in re.split(r"\s+", raw.strip()) if t]
     enabled = [t.lstrip("+") for t in items if not t.startswith("-")]
     if any(t.lower() == "all" for t in enabled):
@@ -384,7 +423,7 @@ def _record_tls_config(inv: Inventory, raw: str, rel: str, line: int) -> None:
         status, note = "ok", "TLS 1.2 미만 차단, TLS 1.3 허용 (하이브리드 그룹 설정은 별도 확인)"
     versions = " ".join(enabled)
     inv.add_protocol(ptype="tls", version=versions, endpoint=f"{rel}:{line}", suites=[], alg_refs=[],
-                     status=status, note=note, scanner="code")
+                     status=status, note=note, scanner="code", technique=det[0], confidence=det[1])
 
 
 # ------------------------------------------------------------------ 실행
@@ -432,14 +471,34 @@ def _ext_of(path: str) -> str:
     return os.path.splitext(base)[1].lower()
 
 
-def scan_code(root: str, inv: Inventory, rel_to: str | None = None, excludes: Iterable[str] = ()) -> int:
-    """root 아래 파일을 스캔해 inv 에 추가. 반환: 찾은 (파일, 줄, 알고리즘) 수."""
+ENGINES = ("auto", "regex")
+
+
+def scan_code(root: str, inv: Inventory, rel_to: str | None = None, excludes: Iterable[str] = (),
+              engine: str = "auto", warn: Optional[Callable[[str], None]] = None) -> int:
+    """root 아래 파일을 스캔해 inv 에 추가. 반환: 찾은 (파일, 줄, 알고리즘) 수.
+
+    engine="auto": Python 은 구문 트리, 그 밖의 언어는 주석·문자열 문맥을 가린 정규식.
+    engine="regex": 예전과 같은 줄 단위 정규식 (비교·비상용).
+    warn: 구문 분석 실패 같은 경고를 받을 함수 (-v 일 때 CLI 가 넘긴다).
+    """
+    if engine not in ENGINES:
+        raise ValueError(f"알 수 없는 엔진: {engine}")
     rel_to = rel_to or (root if os.path.isdir(root) else os.path.dirname(root))
+    prev_scope = inv.scope_fn
+    inv.scope_fn = scope_fn_for(root, rel_to)
+    try:
+        return _scan_files(root, inv, rel_to, excludes, engine, warn)
+    finally:
+        inv.scope_fn = prev_scope
+
+
+def _scan_files(root, inv, rel_to, excludes, engine, warn) -> int:
     count = 0
     for path in iter_files(root, excludes, rel_to):
         ext = _ext_of(path)
         base = os.path.basename(path)
-        relevant = [r for r in RULES if ext in r[0] or (ext == "" and base in CONFIG_NAMES and "" in r[0])]
+        relevant = [r for r in RULES if ext in r.exts or (ext == "" and base in CONFIG_NAMES and "" in r.exts)]
         check_pk = ext in ALL_CODE or ext in CFG or ext in {".txt", ".env", ".sh", ""}
         if not relevant and not check_pk:
             continue
@@ -452,49 +511,139 @@ def scan_code(root: str, inv: Inventory, rel_to: str | None = None, excludes: It
             continue
         if "\x00" in text[:1024]:
             continue
+        if text.startswith("﻿"):
+            text = text[1:]
         lines = text.splitlines()
         rel = os.path.relpath(path, rel_to).replace(os.sep, "/")
+        rec = _Recorder(inv, rel, engine)
+        if engine == "regex":
+            count += _scan_lines(lines, relevant, rec, "regex-engine", "regex-engine")
+        elif ext in PY:
+            count += _scan_python(text, lines, relevant, rec, rel, warn)
+        elif lang_of(ext):
+            count += _scan_clike(lines, relevant, rec, lang_of(ext))
+        else:
+            count += _scan_lines(lines, relevant, rec, "source", "source-pqc-string")
+        pk_kind = "regex-engine" if engine == "regex" else "source"
         for idx, line in enumerate(lines):
-            seen: set = set()
-            for _exts, rx, handler in relevant:
-                for m in rx.finditer(line):
-                    for hit in handler(m, lines, idx) or []:
-                        key = (hit.name.lower(), hit.size, hit.curve, hit.mode)
-                        if key in seen:
-                            continue
-                        seen.add(key)
-                        _record(inv, hit, rel, idx + 1)
-                        count += 1
             if ext in CFG or ext == "":
                 tm = TLS_PROTOCOLS_RE.search(line)
                 if tm:
-                    _record_tls_config(inv, tm.group("list"), rel, idx + 1)
+                    _record_tls_config(inv, tm.group("list"), rel, idx + 1, detection(pk_kind))
                     count += 1
             if check_pk:
                 pm = PRIVATE_KEY_RE.search(line)
                 if pm:
+                    tech, conf = detection(pk_kind)
                     kind = (pm.group("kind") or "").strip() or "PKCS8"
                     alg = {"RSA": "RSA", "EC": "EC", "DSA": "DSA"}.get(kind)
-                    alg_ref = inv.add_algorithm_by_name(alg, location=rel, line=idx + 1, scanner="code") if alg else None
+                    alg_ref = inv.add_algorithm_by_name(alg, location=rel, line=idx + 1, scanner="code",
+                                                        technique=tech, confidence=conf) if alg else None
                     inv.add_key_material(kind="private-key", alg_ref=alg_ref, size=None,
                                          ident=f"{rel}:{idx + 1}", location=rel, line=idx + 1,
                                          status="broken",
                                          note="저장소에 비밀키가 들어 있음 — 즉시 제거하고 키 교체",
-                                         scanner="code")
+                                         scanner="code", technique=tech, confidence=conf)
                     count += 1
     return count
 
 
-def _record(inv: Inventory, hit: Hit, rel: str, line: int) -> None:
+class _Recorder:
+    """한 파일의 발견을 기록한다. 같은 줄의 같은 자산은 한 번만."""
+
+    def __init__(self, inv: Inventory, rel: str, engine: str):
+        self.inv, self.rel, self.engine = inv, rel, engine
+        self.seen: set = set()
+
+    def hit(self, hit: Hit, line: int, kind: str, symbol: Optional[str]) -> int:
+        key = (line, hit.name.lower(), hit.size, hit.curve, hit.mode)
+        if key in self.seen:
+            return 0
+        self.seen.add(key)
+        if self.engine == "regex":
+            symbol = None
+        _record(self.inv, hit, self.rel, line, detection(kind), symbol)
+        return 1
+
+
+def _scan_lines(lines, relevant, rec: _Recorder, kind: str, pqc_kind: str,
+                skip_line: Optional[Callable[[str], bool]] = None) -> int:
+    """줄 단위 정규식 (regex 엔진, 설정 파일, Python 구문 오류 대체)."""
+    count = 0
+    for idx, line in enumerate(lines):
+        if skip_line and skip_line(line):
+            continue
+        for r in relevant:
+            for m in r.rx.finditer(line):
+                for hit in r.handler(m, lines, idx) or []:
+                    count += rec.hit(hit, idx + 1, pqc_kind if r.kind == "pqc" else kind, rule_symbol(r, m))
+    return count
+
+
+def _scan_python(text, lines, relevant, rec: _Recorder, rel, warn) -> int:
+    try:
+        findings = analyze(text, PQC_IN_STR)
+    except (SyntaxError, ValueError, RecursionError, MemoryError) as e:
+        if warn:
+            where = f" (줄 {e.lineno})" if getattr(e, "lineno", None) else ""
+            warn(f"구문 분석 실패, 정규식으로 대체: {rel}{where}")
+        return _scan_lines(lines, relevant, rec, "py-fallback", "py-fallback-pqc-string",
+                           skip_line=lambda ln: ln.lstrip().startswith("#"))
+    count = 0
+    for f in findings:
+        if f.cipher_spec is not None:
+            hits = parse_cipher_spec(f.cipher_spec, f.function or "encrypt")
+        elif f.kind == "ast-pqc-string":
+            hits = [Hit(pqc_name(f.alg), None)]
+        else:
+            hits = [Hit(f.alg, f.function, size=f.size, curve=f.curve, mode=f.mode)]
+        for h in hits:
+            count += rec.hit(h, f.line, f.kind, f.symbol)
+    return count
+
+
+def _scan_clike(lines, relevant, rec: _Recorder, lang: str) -> int:
+    """주석·문자열 문맥을 가린 정규식. 매치 시작이 코드일 때만 기록한다."""
+    ctx: dict = {}
+
+    def maps():
+        if not ctx:
+            ctx["maps"] = context_maps(lines, lang)
+            ctx["code"] = [blank_comments(ln, mp) for ln, mp in zip(lines, ctx["maps"])]
+        return ctx["maps"]
+
+    count = 0
+    api_rules = [r for r in relevant if r.kind != "pqc"]
+    want_pqc = any(r.kind == "pqc" for r in relevant)
+    for idx, line in enumerate(lines):
+        for r in api_rules:
+            for m in r.rx.finditer(line):
+                if maps()[idx][m.start():m.start() + 1] != CODE:
+                    continue
+                for hit in r.handler(m, ctx["code"], idx) or []:
+                    count += rec.hit(hit, idx + 1, "source", rule_symbol(r, m))
+        if want_pqc:
+            for m in PQC_IN_STR.finditer(line):
+                if maps()[idx][m.start():m.start() + 1] != STRING:
+                    continue
+                count += rec.hit(Hit(pqc_name(m.group("alg")), None), idx + 1, "source-pqc-string", None)
+    return count
+
+
+def _record(inv: Inventory, hit: Hit, rel: str, line: int, det: tuple = (None, None),
+            symbol: Optional[str] = None) -> None:
+    tech, conf = det
     name = hit.name
     if name == "sntrup761x25519":
         from ..catalog import Classified, HYBRID
         c = Classified("sntrup761x25519", "sntrup761x25519", "kem", HYBRID, 1,
                        note="NTRU Prime + X25519 하이브리드 (NIST 표준은 아님, mlkem768x25519 권장)")
-        inv.add_algorithm(c, location=rel, line=line, function="keyderive", scanner="code")
+        inv.add_algorithm(c, location=rel, line=line, function="keyderive", scanner="code",
+                          technique=tech, confidence=conf, symbol=symbol)
         return
     curve = hit.curve
     if name.upper() in ("EC",) and curve:
         name = "EC"
     inv.add_algorithm_by_name(name, size=hit.size, curve=curve, mode=hit.mode, location=rel, line=line,
-                              function=hit.function, scanner="code")
+                              function=hit.function, scanner="code", technique=tech, confidence=conf,
+                              symbol=symbol)

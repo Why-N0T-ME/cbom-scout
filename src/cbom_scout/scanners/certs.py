@@ -183,13 +183,19 @@ def scan_file(path: str, rel: str, inv: Inventory) -> int:
 
 
 def scan_certs(root: str, inv: Inventory, rel_to: str | None = None, excludes=()) -> int:
+    from ..detection import scope_fn_for
     rel_to = rel_to or (root if os.path.isdir(root) else os.path.dirname(root))
     total = 0
-    for p in iter_files(root, excludes, rel_to):
-        f = os.path.basename(p)
-        if os.path.isfile(root) or os.path.splitext(f)[1].lower() in CERT_EXT \
-                or f in ("authorized_keys", "known_hosts") or (f.startswith("id_") and f.endswith(".pub")):
-            total += scan_file(p, os.path.relpath(p, rel_to).replace(os.sep, "/"), inv)
+    prev_scope = inv.scope_fn
+    inv.scope_fn = scope_fn_for(root, rel_to)   # 테스트·예제 범위는 스캔 루트 기준
+    try:
+        for p in iter_files(root, excludes, rel_to):
+            f = os.path.basename(p)
+            if os.path.isfile(root) or os.path.splitext(f)[1].lower() in CERT_EXT \
+                    or f in ("authorized_keys", "known_hosts") or (f.startswith("id_") and f.endswith(".pub")):
+                total += scan_file(p, os.path.relpath(p, rel_to).replace(os.sep, "/"), inv)
+    finally:
+        inv.scope_fn = prev_scope
     return total
 
 

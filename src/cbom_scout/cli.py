@@ -14,7 +14,7 @@ from typing import Optional
 from . import __version__
 from .cbom import inventory_from_boms, load, save, to_cbom
 from .inventory import Inventory
-from .policy import ACTIONS, evaluate, fails_at, load_policy, should_fail
+from .policy import ACTIONS, PolicyError, evaluate, fails_at, load_policy, should_fail, validate_policy
 from .report import ACTION_KO, summary_stats, to_html, to_markdown
 
 BUILTIN_POLICIES = {
@@ -56,6 +56,11 @@ def _finish(bom: dict, args, baseline: Optional[dict] = None) -> int:
     from .baseline import clear_marks
     clear_marks(bom)   # check 입력에 남은 이전 비교 결과는 이번 평가와 무관하다
     policy = load_policy(_policy_path(args.policy))
+    try:
+        validate_policy(policy)
+    except PolicyError as e:
+        print(f"cbom-scout: 정책 파일 오류: {e}", file=sys.stderr)
+        return 2
     result = evaluate(bom, policy)
     diff = None
     if baseline is not None:
@@ -159,7 +164,8 @@ def cmd_scan(args) -> int:
             excludes = [e for e in excludes if not is_excluded(root_rel + "/", [e])
                         and not is_excluded(root_rel, [e])]
         if not args.no_code:
-            scan_code(p, inv, rel_to=rel_to, excludes=excludes)
+            warn = (lambda msg: print(f"cbom-scout: {msg}", file=sys.stderr)) if args.verbose else None
+            scan_code(p, inv, rel_to=rel_to, excludes=excludes, engine=args.engine, warn=warn)
         if not args.no_certs:
             scan_certs(p, inv, rel_to=rel_to, excludes=excludes)
     targets = _targets(args)
@@ -218,6 +224,9 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--tls-file", action="append", metavar="FILE", help="한 줄에 하나씩 엔드포인트가 적힌 파일")
     s.add_argument("--timeout", type=float, default=8.0, help="TLS 접속 제한 시간(초)")
     s.add_argument("--no-code", action="store_true", help="소스코드 스캔 끄기")
+    s.add_argument("--engine", default="auto", choices=["auto", "regex"],
+                   help="코드 분석 엔진. auto [기본]: Python 은 구문 트리, 그 밖의 언어는 주석·문자열을 "
+                        "가린 정규식. regex: 예전 줄 단위 정규식 (비교·비상용)")
     s.add_argument("--no-certs", action="store_true", help="인증서·키 파일 스캔 끄기")
     s.add_argument("--merge", action="append", metavar="CBOM", help="다른 도구가 만든 CBOM 을 함께 합치기")
     s.add_argument("--exclude", action="append", metavar="GLOB",

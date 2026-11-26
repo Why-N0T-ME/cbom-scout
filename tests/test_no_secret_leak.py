@@ -24,4 +24,4 @@ def test_hardcoded_key_on_same_line_not_in_cbom(tmp_path):
     assert "additionalContext" not in out
     # 위치·줄 번호는 그대로 남는다
     md5 = inv.components["crypto/algorithm/MD5"]
-    assert {"location": "a.py", "line": 3} in md5["evidence"]["occurrences"]
+    assert ("a.py", 3) in {(o["location"], o.get("line")) for o in md5["evidence"]["occurrences"]}

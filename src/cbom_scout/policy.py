@@ -14,6 +14,7 @@ from dataclasses import dataclass, field
 from typing import Optional
 
 from .catalog import classify
+from .detection import name_confidence
 from .inventory import get_prop, set_prop
 
 ACTIONS = ["pass", "info", "warn", "fail"]
@@ -49,9 +50,23 @@ def worst_of(actions) -> str:
     return worst
 
 
+LOW_CONFIDENCE_NOTE = "(탐지 신뢰도 낮음 — 판정 보류)"
+
+
+class PolicyError(ValueError):
+    """정책 파일 내용이 잘못됐다."""
+
+
 def load_policy(path: Optional[str] = None) -> dict:
     with open(path or DEFAULT_POLICY_PATH, encoding="utf-8") as fh:
         return json.load(fh)
+
+
+def validate_policy(policy: dict) -> None:
+    """선택 키 값 검사. 잘못되면 PolicyError."""
+    mc = policy.get("min_confidence")
+    if mc is not None and (isinstance(mc, bool) or not isinstance(mc, (int, float)) or not 0 <= mc <= 1):
+        raise PolicyError(f"min_confidence 는 0~1 사이 수여야 합니다 (현재 값: {mc!r})")
 
 
 def _status_of(comp: dict) -> str:
@@ -72,8 +87,10 @@ def _status_of(comp: dict) -> str:
 
 
 def evaluate(bom: dict, policy: dict, today: Optional[dt.date] = None) -> Result:
+    validate_policy(policy)
     today = today or dt.date.today()
     rules = policy.get("status", {})
+    min_conf = policy.get("min_confidence")
     findings, counts = [], {a: 0 for a in ACTIONS}
     for comp in bom.get("components", []):
         if comp.get("type") != "cryptographic-asset":
@@ -92,6 +109,11 @@ def evaluate(bom: dict, policy: dict, today: Optional[dt.date] = None) -> Result
         note = get_prop(comp, "note")
         if note:
             msg = f"{msg} — {note}" if msg else note
+        # 탐지 신뢰도가 정책 기준 미만이면 기록하되 빌드를 막지 않는다 (조치 상한 info)
+        conf = name_confidence(comp)
+        if min_conf is not None and conf is not None and conf < min_conf and action in ("warn", "fail"):
+            action = "info"
+            msg = f"{msg} {LOW_CONFIDENCE_NOTE}".strip()
         locs = [o.get("location", "") + (f":{o['line']}" if o.get("line") else "")
                 for o in comp.get("evidence", {}).get("occurrences", [])]
         set_prop(comp, "policy-action", action)

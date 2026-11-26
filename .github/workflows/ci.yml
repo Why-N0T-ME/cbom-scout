@@ -10,11 +10,18 @@ permissions:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
+        os: [ubuntu-latest]
         python: ["3.10", "3.12", "3.13"]
+        include:
+          # 경로·줄바꿈·콘솔 인코딩 차이를 잡기 위해 Windows 에서도 돌린다
+          - os: windows-latest
+            python: "3.10"
+          - os: windows-latest
+            python: "3.13"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5

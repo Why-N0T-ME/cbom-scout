@@ -1,0 +1,1380 @@
+{
+ "_comment": "평가 말뭉치 정답 라벨. file 은 files/ 기준 '/' 경로. 닫힌 세계 채점: 양성 라벨과 맞지 않는 탐지는 모두 오탐. reviewed 는 사람이 라벨을 확인했는지 — 모든 라벨이 true 여야 평가 도구가 지표를 낸다.",
+ "labels": [
+  {
+   "file": "python/direct.py",
+   "line": 10,
+   "name": "MD5",
+   "label": "positive",
+   "category": "direct",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "python/direct.py",
+   "line": 11,
+   "name": "SHA-1",
+   "label": "positive",
+   "category": "direct",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "python/direct.py",
+   "line": 12,
+   "name": "SHA-256",
+   "label": "positive",
+   "category": "direct",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "python/direct.py",
+   "line": 17,
+   "name": "RSA-2048",
+   "label": "positive",
+   "category": "direct",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "python/direct.py",
+   "line": 18,
+   "name": "EC-P-256",
+   "label": "positive",
+   "category": "direct",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "python/direct.py",
+   "line": 19,
+   "name": "RSA-1024",
+   "label": "positive",
+   "category": "direct",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "python/direct.py",
+   "line": 24,
+   "name": "AES-GCM",
+   "label": "positive",
+   "category": "direct",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "python/direct.py",
+   "line": 25,
+   "name": "ChaCha20-Poly1305",
+   "label": "positive",
+   "category": "direct",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "python/direct.py",
+   "line": 26,
+   "name": "3DES-CBC",
+   "label": "positive",
+   "category": "direct",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "python/direct.py",
+   "line": 27,
+   "name": "RC4",
+   "label": "positive",
+   "category": "direct",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "python/direct.py",
+   "line": 32,
+   "name": "SHA-384",
+   "label": "positive",
+   "category": "direct",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "python/direct.py",
+   "line": 40,
+   "name": "ECDSA",
+   "label": "positive",
+   "category": "direct",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "python/direct.py",
+   "line": 40,
+   "name": "SHA-256",
+   "label": "positive",
+   "category": "direct",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "python/direct.py",
+   "line": 41,
+   "name": "X25519",
+   "label": "positive",
+   "category": "direct",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "python/direct.py",
+   "line": 42,
+   "name": "DSA-1024",
+   "label": "positive",
+   "category": "direct",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "python/direct.py",
+   "line": 43,
+   "name": "AES-CCM",
+   "label": "positive",
+   "category": "direct",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "python/direct.py",
+   "line": 44,
+   "name": "SHA-512",
+   "label": "positive",
+   "category": "direct",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "python/comments.py",
+   "line": 4,
+   "name": "MD5",
+   "label": "negative",
+   "category": "comment",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "python/comments.py",
+   "line": 5,
+   "name": "RSA-1024",
+   "label": "negative",
+   "category": "comment",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "python/comments.py",
+   "line": 6,
+   "name": "SHA-1",
+   "label": "negative",
+   "category": "comment",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "python/comments.py",
+   "line": 10,
+   "name": "SHA-256",
+   "label": "positive",
+   "category": "direct",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "python/docstrings.py",
+   "line": 1,
+   "name": "MD5",
+   "label": "negative",
+   "category": "docstring",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "python/docstrings.py",
+   "line": 5,
+   "name": "RSA-1024",
+   "label": "negative",
+   "category": "docstring",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "python/docstrings.py",
+   "line": 10,
+   "name": "3DES",
+   "label": "negative",
+   "category": "docstring",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "python/docstrings.py",
+   "line": 10,
+   "name": "AES-ECB",
+   "label": "negative",
+   "category": "docstring",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "python/docstrings.py",
+   "line": 13,
+   "name": "SHA-1",
+   "label": "negative",
+   "category": "docstring",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "python/docstrings.py",
+   "line": 18,
+   "name": "ML-DSA-65",
+   "label": "negative",
+   "category": "docstring",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "python/strings.py",
+   "line": 3,
+   "name": "MD5",
+   "label": "negative",
+   "category": "string-literal",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "python/strings.py",
+   "line": 4,
+   "name": "3DES",
+   "label": "negative",
+   "category": "string-literal",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "python/strings.py",
+   "line": 4,
+   "name": "AES-ECB",
+   "label": "negative",
+   "category": "string-literal",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "python/strings.py",
+   "line": 5,
+   "name": "RSA-1024",
+   "label": "negative",
+   "category": "string-literal",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "python/strings.py",
+   "line": 9,
+   "name": "ML-KEM-768",
+   "label": "positive",
+   "category": "pqc-string",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "python/lookalike.py",
+   "line": 4,
+   "name": "MD5",
+   "label": "negative",
+   "category": "lookalike",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "python/lookalike.py",
+   "line": 5,
+   "name": "MD5",
+   "label": "negative",
+   "category": "lookalike",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "python/lookalike.py",
+   "line": 9,
+   "name": "AES",
+   "label": "negative",
+   "category": "lookalike",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "python/lookalike.py",
+   "line": 13,
+   "name": "SHA-1",
+   "label": "negative",
+   "category": "lookalike",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "python/lookalike.py",
+   "line": 14,
+   "name": "RSA",
+   "label": "negative",
+   "category": "lookalike",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "python/alias.py",
+   "line": 8,
+   "name": "SHA-512",
+   "label": "positive",
+   "category": "alias",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "python/alias.py",
+   "line": 9,
+   "name": "MD5",
+   "label": "positive",
+   "category": "alias",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "python/alias.py",
+   "line": 10,
+   "name": "SHA-1",
+   "label": "positive",
+   "category": "alias",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "python/alias.py",
+   "line": 11,
+   "name": "RSA-1024",
+   "label": "positive",
+   "category": "alias",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "python/alias.py",
+   "line": 12,
+   "name": "AES-GCM",
+   "label": "positive",
+   "category": "alias",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "python/multiline.py",
+   "line": 7,
+   "name": "RSA-1024",
+   "label": "positive",
+   "category": "multiline",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "python/multiline.py",
+   "line": 11,
+   "name": "DH-1024",
+   "label": "positive",
+   "category": "multiline",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "python/multiline.py",
+   "line": 15,
+   "name": "AES-CBC",
+   "label": "positive",
+   "category": "multiline",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "python/multiline.py",
+   "line": 19,
+   "name": "EC-P-384",
+   "label": "positive",
+   "category": "multiline",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "python/multiline.py",
+   "line": 22,
+   "name": "SHA-1",
+   "label": "positive",
+   "category": "multiline",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "python/indirect_const.py",
+   "line": 17,
+   "name": "SHA-1",
+   "label": "positive",
+   "category": "indirect-const",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "python/indirect_const.py",
+   "line": 21,
+   "name": "RSA-1024",
+   "label": "positive",
+   "category": "indirect-const",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "python/indirect_const.py",
+   "line": 26,
+   "name": "MD5",
+   "label": "positive",
+   "category": "indirect-const",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "python/indirect_const.py",
+   "line": 30,
+   "name": "RSA-1024",
+   "label": "positive",
+   "category": "indirect-const",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "python/indirect_const.py",
+   "line": 34,
+   "name": "EC-P-256",
+   "label": "positive",
+   "category": "indirect-const",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "python/indirect_const.py",
+   "line": 38,
+   "name": "3DES-ECB",
+   "label": "positive",
+   "category": "indirect-const",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "python/indirect_const.py",
+   "line": 42,
+   "name": "DH-1024",
+   "label": "positive",
+   "category": "indirect-const",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "python/indirect_const.py",
+   "line": 46,
+   "name": "SHA-512",
+   "label": "positive",
+   "category": "indirect-const",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "python/indirect_default.py",
+   "line": 7,
+   "name": "MD5",
+   "label": "positive",
+   "category": "indirect-default",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "python/indirect_default.py",
+   "line": 11,
+   "name": "RSA-1024",
+   "label": "positive",
+   "category": "indirect-default",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "python/indirect_default.py",
+   "line": 15,
+   "name": "RSA-1024",
+   "label": "positive",
+   "category": "indirect-default",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "python/tests/test_crypto.py",
+   "line": 5,
+   "name": "MD5",
+   "label": "positive",
+   "category": "test-path",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false,
+   "scope": "test"
+  },
+  {
+   "file": "python/tests/test_crypto.py",
+   "line": 9,
+   "name": "SHA-1",
+   "label": "positive",
+   "category": "test-path",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false,
+   "scope": "test"
+  },
+  {
+   "file": "python/pkg/cross_function.py",
+   "line": 9,
+   "name": "SHA-1",
+   "label": "positive",
+   "category": "cross-function",
+   "phase": "later",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "python/pkg/cross_function.py",
+   "line": 13,
+   "name": "RSA-1024",
+   "label": "positive",
+   "category": "cross-function",
+   "phase": "later",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "python/pkg/cross_function.py",
+   "line": 20,
+   "name": "MD5",
+   "label": "positive",
+   "category": "cross-function",
+   "phase": "later",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "python/pkg/cross_function.py",
+   "line": 24,
+   "name": "RSA-1024",
+   "label": "positive",
+   "category": "cross-function",
+   "phase": "later",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "python/pkg/cross_function.py",
+   "line": 31,
+   "name": "SHA-1",
+   "label": "positive",
+   "category": "cross-function",
+   "phase": "later",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "java/Crypto.java",
+   "line": 8,
+   "name": "DES-ECB",
+   "label": "negative",
+   "category": "comment",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "java/Crypto.java",
+   "line": 9,
+   "name": "MD5",
+   "label": "negative",
+   "category": "comment",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "java/Crypto.java",
+   "line": 10,
+   "name": "SHA-1",
+   "label": "negative",
+   "category": "comment",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "java/Crypto.java",
+   "line": 10,
+   "name": "RSA",
+   "label": "negative",
+   "category": "comment",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "java/Crypto.java",
+   "line": 11,
+   "name": "RC4",
+   "label": "negative",
+   "category": "comment",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "java/Crypto.java",
+   "line": 16,
+   "name": "DH",
+   "label": "negative",
+   "category": "comment",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "java/Crypto.java",
+   "line": 12,
+   "name": "3DES",
+   "label": "negative",
+   "category": "string-literal",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "java/Crypto.java",
+   "line": 14,
+   "name": "SHA-1",
+   "label": "negative",
+   "category": "string-literal",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "java/Crypto.java",
+   "line": 17,
+   "name": "MD5",
+   "label": "negative",
+   "category": "lookalike",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "java/Crypto.java",
+   "line": 18,
+   "name": "AES",
+   "label": "negative",
+   "category": "lookalike",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "java/Crypto.java",
+   "line": 21,
+   "name": "DES-CBC",
+   "label": "positive",
+   "category": "direct",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "java/Crypto.java",
+   "line": 22,
+   "name": "MD5",
+   "label": "positive",
+   "category": "direct",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "java/Crypto.java",
+   "line": 23,
+   "name": "SHA-256",
+   "label": "positive",
+   "category": "direct",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "java/Crypto.java",
+   "line": 23,
+   "name": "RSA",
+   "label": "positive",
+   "category": "direct",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "java/Crypto.java",
+   "line": 24,
+   "name": "RSA-1024",
+   "label": "positive",
+   "category": "direct",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "java/Crypto.java",
+   "line": 27,
+   "name": "ML-KEM-768",
+   "label": "positive",
+   "category": "direct",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "java/Crypto.java",
+   "line": 28,
+   "name": "ML-KEM-1024",
+   "label": "positive",
+   "category": "pqc-string",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "java/Crypto.java",
+   "line": 29,
+   "name": "HMAC",
+   "label": "positive",
+   "category": "direct",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "java/Crypto.java",
+   "line": 29,
+   "name": "SHA-256",
+   "label": "positive",
+   "category": "direct",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "java/Crypto.java",
+   "line": 30,
+   "name": "ECDH",
+   "label": "positive",
+   "category": "direct",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "java/src/test/java/CryptoTest.java",
+   "line": 7,
+   "name": "SHA-1",
+   "label": "positive",
+   "category": "test-path",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false,
+   "scope": "test"
+  },
+  {
+   "file": "go/main.go",
+   "line": 14,
+   "name": "SHA-1",
+   "label": "negative",
+   "category": "comment",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "go/main.go",
+   "line": 15,
+   "name": "MD5",
+   "label": "negative",
+   "category": "string-literal",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "go/main.go",
+   "line": 16,
+   "name": "DES",
+   "label": "negative",
+   "category": "string-literal",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "go/main.go",
+   "line": 17,
+   "name": "MD5",
+   "label": "negative",
+   "category": "lookalike",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "go/main.go",
+   "line": 20,
+   "name": "MD5",
+   "label": "positive",
+   "category": "direct",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "go/main.go",
+   "line": 21,
+   "name": "SHA-256",
+   "label": "positive",
+   "category": "direct",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "go/main.go",
+   "line": 22,
+   "name": "RSA-1024",
+   "label": "positive",
+   "category": "direct",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "go/main.go",
+   "line": 23,
+   "name": "AES",
+   "label": "positive",
+   "category": "direct",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "go/main.go",
+   "line": 24,
+   "name": "3DES",
+   "label": "positive",
+   "category": "direct",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "go/main.go",
+   "line": 26,
+   "name": "ECDSA-P-256",
+   "label": "positive",
+   "category": "direct",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "go/util_test.go",
+   "line": 5,
+   "name": "SHA-512",
+   "label": "positive",
+   "category": "test-path",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false,
+   "scope": "test"
+  },
+  {
+   "file": "js/crypto.ts",
+   "line": 3,
+   "name": "MD5",
+   "label": "negative",
+   "category": "comment",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "js/crypto.ts",
+   "line": 4,
+   "name": "3DES-CBC",
+   "label": "negative",
+   "category": "comment",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "js/crypto.ts",
+   "line": 5,
+   "name": "SHA-1",
+   "label": "negative",
+   "category": "string-literal",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "js/crypto.ts",
+   "line": 6,
+   "name": "SHA-1",
+   "label": "negative",
+   "category": "string-literal",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "js/crypto.ts",
+   "line": 7,
+   "name": "SHA-1",
+   "label": "negative",
+   "category": "lookalike",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "js/crypto.ts",
+   "line": 10,
+   "name": "MD5",
+   "label": "positive",
+   "category": "direct",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "js/crypto.ts",
+   "line": 11,
+   "name": "SHA-256",
+   "label": "positive",
+   "category": "direct",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "js/crypto.ts",
+   "line": 12,
+   "name": "AES-256-GCM",
+   "label": "positive",
+   "category": "direct",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "js/crypto.ts",
+   "line": 13,
+   "name": "RSA-1024",
+   "label": "positive",
+   "category": "multiline",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "js/crypto.ts",
+   "line": 16,
+   "name": "HMAC",
+   "label": "positive",
+   "category": "direct",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "js/crypto.ts",
+   "line": 16,
+   "name": "SHA-1",
+   "label": "positive",
+   "category": "direct",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "js/crypto.test.js",
+   "line": 4,
+   "name": "SHA-384",
+   "label": "positive",
+   "category": "test-path",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false,
+   "scope": "test"
+  },
+  {
+   "file": "c/crypto.c",
+   "line": 4,
+   "name": "MD5",
+   "label": "negative",
+   "category": "comment",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "c/crypto.c",
+   "line": 5,
+   "name": "3DES-CBC",
+   "label": "negative",
+   "category": "comment",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "c/crypto.c",
+   "line": 6,
+   "name": "SHA-1",
+   "label": "negative",
+   "category": "string-literal",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "c/crypto.c",
+   "line": 7,
+   "name": "MD5",
+   "label": "negative",
+   "category": "lookalike",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "c/crypto.c",
+   "line": 10,
+   "name": "SHA-256",
+   "label": "positive",
+   "category": "direct",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "c/crypto.c",
+   "line": 11,
+   "name": "MD5",
+   "label": "positive",
+   "category": "direct",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "c/crypto.c",
+   "line": 12,
+   "name": "AES-128-CBC",
+   "label": "positive",
+   "category": "direct",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "c/crypto.c",
+   "line": 13,
+   "name": "3DES-CBC",
+   "label": "positive",
+   "category": "direct",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "c/crypto.c",
+   "line": 14,
+   "name": "RSA",
+   "label": "positive",
+   "category": "direct",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "csharp/Crypto.cs",
+   "line": 5,
+   "name": "MD5",
+   "label": "negative",
+   "category": "comment",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "csharp/Crypto.cs",
+   "line": 6,
+   "name": "3DES",
+   "label": "negative",
+   "category": "comment",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "csharp/Crypto.cs",
+   "line": 7,
+   "name": "SHA-1",
+   "label": "negative",
+   "category": "string-literal",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "csharp/Crypto.cs",
+   "line": 8,
+   "name": "DES",
+   "label": "negative",
+   "category": "string-literal",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "csharp/Crypto.cs",
+   "line": 9,
+   "name": "MD5",
+   "label": "negative",
+   "category": "lookalike",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "csharp/Crypto.cs",
+   "line": 13,
+   "name": "MD5",
+   "label": "positive",
+   "category": "direct",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "csharp/Crypto.cs",
+   "line": 14,
+   "name": "SHA-1",
+   "label": "positive",
+   "category": "direct",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "csharp/Crypto.cs",
+   "line": 15,
+   "name": "SHA-256",
+   "label": "positive",
+   "category": "direct",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "csharp/Crypto.cs",
+   "line": 16,
+   "name": "3DES",
+   "label": "positive",
+   "category": "direct",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "csharp/Crypto.cs",
+   "line": 17,
+   "name": "RSA",
+   "label": "positive",
+   "category": "direct",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "csharp/Crypto.cs",
+   "line": 18,
+   "name": "AES",
+   "label": "positive",
+   "category": "direct",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "config/sshd_config",
+   "line": 1,
+   "name": "DH-1024",
+   "label": "negative",
+   "category": "comment",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "config/sshd_config",
+   "line": 4,
+   "name": "DSA",
+   "label": "negative",
+   "category": "comment",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "config/sshd_config",
+   "line": 2,
+   "name": "DH-2048",
+   "label": "positive",
+   "category": "direct",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "config/sshd_config",
+   "line": 2,
+   "name": "X25519",
+   "label": "positive",
+   "category": "direct",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "config/sshd_config",
+   "line": 3,
+   "name": "Ed25519",
+   "label": "positive",
+   "category": "direct",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "config/nginx.conf",
+   "line": 2,
+   "name": "ECDH-P-256",
+   "label": "negative",
+   "category": "comment",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "config/nginx.conf",
+   "line": 3,
+   "name": "X25519MLKEM768",
+   "label": "positive",
+   "category": "direct",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "config/nginx.conf",
+   "line": 3,
+   "name": "ECDH-P-384",
+   "label": "positive",
+   "category": "direct",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  }
+ ]
+}
