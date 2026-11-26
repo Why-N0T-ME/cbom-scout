@@ -1,0 +1,177 @@
+# cbom-scout 🔐
+
+**우리 회사가 어떤 암호를 어디에 쓰는지 자동으로 찾아내는 도구.**
+소스코드·설정 파일·인증서·TLS 엔드포인트를 스캔해 **CycloneDX 1.6 CBOM**(Cryptography Bill of Materials)을 만들고,
+NIST PQC 전환 일정(IR 8547) 기준으로 무엇을 언제 바꿔야 하는지 판정합니다.
+CI에 붙이면 배포할 때마다 암호 목록이 갱신되고, 금지된 알고리즘이 새로 들어오면 빌드를 막습니다.
+
+> 보이지 않으면 바꿀 수 없다. 암호 민첩성(crypto agility)의 출발점은 살아 있는 암호 인벤토리다.
+
+## 무엇을 찾나
+
+| 계층 | 대상 | 예 |
+|---|---|---|
+| 소스코드 | Python, Java/Kotlin, Go, JS/TS, C/C++(OpenSSL), C# | `rsa.generate_private_key(key_size=2048)`, `Cipher.getInstance("DESede/CBC/...")`, `mlkem.GenerateKey768()` |
+| 설정 파일 | nginx, Apache, sshd/ssh, OpenSSL 설정 | `ssl_protocols TLSv1 TLSv1.1`, `KexAlgorithms mlkem768x25519-sha256,...`, `ssl_ecdh_curve X25519` |
+| 인증서·키 | PEM/DER 인증서, 공개키·비밀키, SSH 공개키 | 키 알고리즘·길이, 서명 해시, 만료일. **키 값은 기록하지 않음** |
+| 저장소 내 비밀키 | 모든 텍스트 파일 | `-----BEGIN RSA PRIVATE KEY-----` 가 커밋돼 있으면 즉시 실패 |
+| TLS 엔드포인트 | `host:port` 목록 | 협상된 TLS 버전·암호 스위트·서버 인증서, (OpenSSL 3.5+ 있으면) **하이브리드 PQC 키 교환(X25519MLKEM768) 협상 여부** |
+| 외부 CBOM | 다른 도구 결과 | CBOMkit(sonar-cryptography) 등이 만든 CBOM 을 `merge` 로 합쳐 같은 정책으로 평가 |
+
+## 판정 기준
+
+| 상태 | 의미 | 기본 정책 (`nist-ir8547`) |
+|---|---|---|
+| `broken` | 고전 컴퓨터로도 취약 (MD5, SHA-1, DES/3DES, RC4, RSA-1024, ECB, TLS 1.0/1.1, 커밋된 비밀키) | 🔴 즉시 실패 |
+| `quantum-vulnerable` | Shor 알고리즘에 깨지는 공개키 (RSA, ECDSA, ECDH, Ed25519, X25519, DH) | 🟠 경고 → **2031-01-01부터 자동 실패** |
+| `symmetric-weak` | AES-128, SHA-256 등 양자 여유가 작은 대칭키·해시 | 🔵 참고 |
+| `hybrid` | X25519MLKEM768 등 고전+PQC 하이브리드 | 🟢 통과 |
+| `pqc` | ML-KEM, ML-DSA, SLH-DSA, LMS/XMSS, **KpqC(SMAUG-T, NTRU+, HAETAE, AIMer)** | 🟢 통과 |
+| `pqc-draft` | FN-DSA(FIPS 206 초안), HQC | 🔵 참고 |
+
+`quantum-vulnerable` 의 실패 전환 날짜는 NIST IR 8547 최종본(2026.10)의 "2030년 이후 비권고, 2035년 이후 금지"와 국내 중요시스템 전환 목표(2031년)를 반영한 기본값입니다. 정책 파일에서 바꿀 수 있습니다.
+
+## 빠른 시작
+
+```bash
+pip install git+https://github.com/OWNER/cbom-scout.git     # 또는 저장소를 받아 pip install -e .
+
+# 현재 저장소 스캔 → cbom.json + 리포트
+cbom-scout scan . --markdown report.md --html report.html -v
+
+# 외부 엔드포인트까지 함께
+cbom-scout scan . --tls api.example.com:443 --tls www.example.com
+
+# 엔드포인트 목록 파일
+cbom-scout scan --tls-file endpoints.txt -o tls-cbom.json
+
+# 신규 서비스용 엄격 정책 (양자 취약 공개키도 즉시 실패)
+cbom-scout scan . --policy strict
+
+# 여러 CBOM 합치기 → 전사 인벤토리
+cbom-scout merge team-a.json team-b.json cbomkit-output.json -o company.json
+cbom-scout check company.json --html company-report.html --fail-on never
+```
+
+종료 코드: `0` 통과, `1` 정책 위반(`--fail-on` 기준), `2` 사용법 오류.
+
+데모 앱으로 바로 확인해 볼 수 있습니다:
+
+```bash
+cbom-scout scan examples/demo-app -v
+# cbom-scout: 자산 29개 (알고리즘 24, 취약 15, PQC·하이브리드 3) · 실패 5 / 경고 14 / 참고 4 / 통과 6 → 실패
+```
+
+결과 예시: [docs/sample-report.md](docs/sample-report.md) · [docs/sample-cbom.json](docs/sample-cbom.json)
+
+## GitHub Action 으로 자동화
+
+```yaml
+# .github/workflows/cbom.yml
+name: Crypto inventory
+on: [pull_request, push]
+jobs:
+  cbom:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: OWNER/cbom-scout@v0.1.0
+        with:
+          path: .
+          tls-targets: api.example.com:443
+          policy: nist-ir8547
+          fail-on: fail
+```
+
+- PR 화면의 **작업 요약(Job summary)** 에 리포트 표가 붙고, 문제가 된 코드 줄에 **주석(annotation)** 이 달립니다.
+- `cbom.json`, `cbom-report.md`, `cbom-report.html` 이 아티팩트로 올라갑니다.
+- 주간 `schedule` 트리거를 걸면 외부 TLS 엔드포인트의 PQC 적용 현황을 계속 추적할 수 있습니다.
+  전체 예시: [examples/workflows/cbom-scan.yml](examples/workflows/cbom-scan.yml)
+
+## 정책 = 코드 밖의 설정 (암호 민첩성)
+
+판정 기준은 [src/cbom_scout/policies/](src/cbom_scout/policies/) 의 JSON 파일입니다. 기준이 바뀌면 코드를 고치지 않고 정책만 바꿉니다.
+
+```json
+{
+  "name": "my-company",
+  "status": {
+    "broken":             {"action": "fail"},
+    "quantum-vulnerable": {"action": "warn", "fail_after": "2029-01-01"},
+    "symmetric-weak":     {"action": "warn"},
+    "pqc":                {"action": "pass"}
+  },
+  "overrides": [
+    {"name": "MD5", "action": "info", "message": "레거시 파일 체크섬 — 보안팀 예외 승인 #123"}
+  ]
+}
+```
+
+```bash
+cbom-scout scan . --policy my-company.json
+```
+
+## CBOM 출력 형식
+
+[CycloneDX 1.6](https://cyclonedx.org/) 스키마를 따르며, 테스트에서 공식 JSON 스키마로 검증합니다.
+
+```json
+{
+  "type": "cryptographic-asset",
+  "bom-ref": "crypto/algorithm/RSA-2048",
+  "name": "RSA-2048",
+  "cryptoProperties": {
+    "assetType": "algorithm",
+    "algorithmProperties": {"primitive": "pke", "parameterSetIdentifier": "2048",
+                            "nistQuantumSecurityLevel": 0, "cryptoFunctions": ["keygen"]},
+    "oid": "1.2.840.113549.1.1.1"
+  },
+  "evidence": {"occurrences": [{"location": "src/payment.py", "line": 10}]},
+  "properties": [{"name": "cbom-scout:status", "value": "quantum-vulnerable"},
+                 {"name": "cbom-scout:policy-action", "value": "warn"}]
+}
+```
+
+알고리즘·인증서·키 자료·프로토콜이 `dependencies` 로 연결되어, "이 인증서는 어떤 키 알고리즘과 서명 알고리즘을 쓰는가"를 따라갈 수 있습니다.
+
+## 구조
+
+```
+src/cbom_scout/
+├── catalog.py          알고리즘 지식 베이스 (상태·primitive·양자 보안 수준·KpqC 포함)
+├── inventory.py        발견 결과 → CycloneDX 구성요소, 중복 제거·병합
+├── scanners/
+│   ├── code.py         언어별 정규식 규칙 + 설정 파일 + 커밋된 비밀키
+│   ├── certs.py        인증서·키 파일 (cryptography 라이브러리)
+│   └── tls.py          TLS 엔드포인트 (ssl + OpenSSL 3.5 s_client)
+├── cbom.py             CBOM 직렬화·병합
+├── policy.py           정책 평가 (fail_after 날짜 승격, overrides)
+├── report.py           마크다운·HTML 리포트
+└── cli.py              scan / check / merge
+```
+
+## 한계와 보완 방법
+
+- **정규식 기반 정적 분석**이라 데이터 흐름(변수로 넘어온 알고리즘 이름 등)은 추적하지 못합니다. 언어별 정밀 분석은 [CBOMkit](https://github.com/cbomkit) 결과를 `merge` 로 합치세요.
+- 설정으로만 정해지는 암호(런타임 협상)는 **TLS 스캔**으로, 저장소 밖의 키는 **HSM·KMS 조회**(로드맵)로 보완해야 합니다.
+- 망분리 구간·SaaS·벤더 제품은 자동 스캔이 닿지 않습니다. 공급사에 CBOM 제공을 요구하고 `merge` 로 합치세요.
+- TLS 하이브리드 키 교환 확인은 실행 환경에 **OpenSSL 3.5 이상**이 필요합니다. 없으면 `key-exchange-source: unavailable` 로 표시됩니다.
+
+## 로드맵
+
+- [ ] 클라우드 KMS(AWS/GCP/Azure) 키 목록 수집기
+- [ ] SSH 엔드포인트 스캐너 (KEX·호스트키 협상)
+- [ ] 컨테이너 이미지 스캔 (패키지된 OpenSSL 버전·인증서)
+- [ ] SARIF 출력 → GitHub Code Scanning 연동
+- [ ] KCMVP 검증 모듈 목록과 대조
+
+## 개발
+
+```bash
+pip install -e ".[dev]"
+pytest -q
+```
+
+## 라이선스
+
+Apache License 2.0. `tests/schemas/` 의 CycloneDX 스키마는 OWASP CycloneDX 프로젝트의 것입니다(Apache-2.0).

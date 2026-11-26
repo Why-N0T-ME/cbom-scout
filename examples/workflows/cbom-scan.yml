@@ -1,0 +1,31 @@
+# 다른 저장소에서 cbom-scout 를 쓰는 예시.
+# 이 파일을 대상 저장소의 .github/workflows/ 아래에 복사하고
+# OWNER/cbom-scout 를 실제 저장소 경로로 바꾸세요.
+name: Crypto inventory (CBOM)
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "17 2 * * 1"   # 매주 월요일, 외부 TLS 엔드포인트 재점검
+
+permissions:
+  contents: read
+
+jobs:
+  cbom:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Scan cryptography
+        uses: OWNER/cbom-scout@v0.1.0
+        with:
+          path: .
+          # 외부 공개 엔드포인트 (선택)
+          tls-targets: |
+            api.example.com:443
+            www.example.com:443
+          policy: nist-ir8547   # 신규 서비스는 strict 권장
+          fail-on: fail         # broken 은 즉시 차단, 양자 취약은 2031년부터 차단

@@ -1,0 +1,93 @@
+name: "cbom-scout"
+description: "저장소의 암호자산을 자동 식별해 CycloneDX 1.6 CBOM과 PQC 전환 리포트를 만들고, 정책 위반 시 빌드를 실패시킨다"
+author: "cbom-scout contributors"
+branding:
+  icon: "shield"
+  color: "orange"
+
+inputs:
+  path:
+    description: "스캔할 경로 (공백으로 여러 개)"
+    default: "."
+  tls-targets:
+    description: "TLS 엔드포인트 목록 (공백 또는 줄바꿈 구분, 예: api.example.com:443)"
+    default: ""
+  tls-file:
+    description: "엔드포인트가 한 줄에 하나씩 적힌 파일 경로"
+    default: ""
+  policy:
+    description: "정책 파일 경로 또는 내장 정책 이름 (nist-ir8547, strict)"
+    default: "nist-ir8547"
+  fail-on:
+    description: "이 수준 이상이면 실패 (fail, warn, info, never)"
+    default: "fail"
+  output:
+    description: "CBOM 파일 경로"
+    default: "cbom.json"
+  upload-artifact:
+    description: "CBOM과 리포트를 워크플로 아티팩트로 올릴지 여부"
+    default: "true"
+  python-version:
+    description: "사용할 Python 버전"
+    default: "3.12"
+
+outputs:
+  cbom:
+    description: "생성된 CBOM 경로"
+    value: ${{ steps.scan.outputs.cbom }}
+  exit-code:
+    description: "cbom-scout 종료 코드 (0 통과, 1 정책 위반)"
+    value: ${{ steps.scan.outputs.exit-code }}
+
+runs:
+  using: "composite"
+  steps:
+    - uses: actions/setup-python@v5
+      with:
+        python-version: ${{ inputs.python-version }}
+
+    - name: Install cbom-scout
+      shell: bash
+      run: python -m pip install --quiet "${{ github.action_path }}"
+
+    - name: Scan
+      id: scan
+      shell: bash
+      env:
+        IN_PATH: ${{ inputs.path }}
+        IN_TLS: ${{ inputs.tls-targets }}
+        IN_TLS_FILE: ${{ inputs.tls-file }}
+        IN_POLICY: ${{ inputs.policy }}
+        IN_FAIL_ON: ${{ inputs.fail-on }}
+        IN_OUTPUT: ${{ inputs.output }}
+      run: |
+        set +e
+        args=(scan)
+        if [ -n "$IN_PATH" ]; then read -r -a paths <<< "$IN_PATH"; args+=("${paths[@]}"); fi
+        for t in $IN_TLS; do args+=(--tls "$t"); done
+        if [ -n "$IN_TLS_FILE" ]; then args+=(--tls-file "$IN_TLS_FILE"); fi
+        args+=(--policy "$IN_POLICY" --fail-on "$IN_FAIL_ON" -o "$IN_OUTPUT")
+        args+=(--markdown cbom-report.md --html cbom-report.html -v)
+        cbom-scout "${args[@]}"
+        code=$?
+        echo "cbom=$IN_OUTPUT" >> "$GITHUB_OUTPUT"
+        echo "exit-code=$code" >> "$GITHUB_OUTPUT"
+        exit 0
+
+    - name: Upload CBOM
+      if: ${{ inputs.upload-artifact == 'true' }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: cbom
+        path: |
+          ${{ inputs.output }}
+          cbom-report.md
+          cbom-report.html
+
+    - name: Enforce policy
+      shell: bash
+      run: |
+        if [ "${{ steps.scan.outputs.exit-code }}" != "0" ]; then
+          echo "::error::cbom-scout 정책 위반 (fail-on=${{ inputs.fail-on }}). 리포트를 확인하세요."
+          exit 1
+        fi

@@ -1,0 +1,1404 @@
+{
+  "$schema": "http://cyclonedx.org/schema/bom-1.6.schema.json",
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.6",
+  "serialNumber": "urn:uuid:3087db55-0731-4678-b3c1-8bfb9b3be757",
+  "version": 1,
+  "metadata": {
+    "timestamp": "2026-11-26T12:50:34Z",
+    "tools": {
+      "components": [
+        {
+          "type": "application",
+          "name": "cbom-scout",
+          "version": "0.1.0"
+        }
+      ]
+    },
+    "component": {
+      "type": "application",
+      "name": "demo-app",
+      "bom-ref": "subject/demo-app"
+    }
+  },
+  "components": [
+    {
+      "type": "cryptographic-asset",
+      "bom-ref": "crypto/algorithm/3DES-CBC",
+      "name": "3DES-CBC",
+      "cryptoProperties": {
+        "assetType": "algorithm",
+        "algorithmProperties": {
+          "primitive": "block-cipher",
+          "nistQuantumSecurityLevel": 0,
+          "executionEnvironment": "software-plain-ram",
+          "mode": "cbc",
+          "cryptoFunctions": [
+            "encrypt"
+          ]
+        }
+      },
+      "properties": [
+        {
+          "name": "cbom-scout:status",
+          "value": "broken"
+        },
+        {
+          "name": "cbom-scout:status-label",
+          "value": "즉시 교체 (취약)"
+        },
+        {
+          "name": "cbom-scout:note",
+          "value": "NIST 사용 금지 (SP 800-131A)"
+        },
+        {
+          "name": "cbom-scout:scanners",
+          "value": "code"
+        },
+        {
+          "name": "cbom-scout:policy-action",
+          "value": "fail"
+        }
+      ],
+      "evidence": {
+        "occurrences": [
+          {
+            "location": "examples/demo-app/src/AuthService.java",
+            "line": 20,
+            "additionalContext": "Cipher c = Cipher.getInstance(\"DESede/CBC/PKCS5Padding\");   // 취약: 3DES"
+          }
+        ]
+      }
+    },
+    {
+      "type": "cryptographic-asset",
+      "bom-ref": "crypto/algorithm/AES",
+      "name": "AES",
+      "cryptoProperties": {
+        "assetType": "algorithm",
+        "algorithmProperties": {
+          "primitive": "block-cipher",
+          "nistQuantumSecurityLevel": 1,
+          "executionEnvironment": "software-plain-ram",
+          "cryptoFunctions": [
+            "encrypt"
+          ]
+        }
+      },
+      "properties": [
+        {
+          "name": "cbom-scout:status",
+          "value": "symmetric-weak"
+        },
+        {
+          "name": "cbom-scout:status-label",
+          "value": "대칭키·해시 상향 권장"
+        },
+        {
+          "name": "cbom-scout:note",
+          "value": "키 길이 미확인 → AES-256 확인 필요"
+        },
+        {
+          "name": "cbom-scout:scanners",
+          "value": "code"
+        },
+        {
+          "name": "cbom-scout:policy-action",
+          "value": "info"
+        }
+      ],
+      "evidence": {
+        "occurrences": [
+          {
+            "location": "examples/demo-app/src/payment.py",
+            "line": 26,
+            "additionalContext": "enc = Cipher(algorithms.AES(key), modes.ECB()).encryptor()   # 취약: ECB"
+          }
+        ]
+      }
+    },
+    {
+      "type": "cryptographic-asset",
+      "bom-ref": "crypto/algorithm/AES-256-GCM",
+      "name": "AES-256-GCM",
+      "cryptoProperties": {
+        "assetType": "algorithm",
+        "algorithmProperties": {
+          "primitive": "block-cipher",
+          "nistQuantumSecurityLevel": 5,
+          "executionEnvironment": "software-plain-ram",
+          "parameterSetIdentifier": "256",
+          "mode": "gcm",
+          "cryptoFunctions": [
+            "encrypt"
+          ]
+        }
+      },
+      "properties": [
+        {
+          "name": "cbom-scout:status",
+          "value": "symmetric-ok"
+        },
+        {
+          "name": "cbom-scout:status-label",
+          "value": "대칭키·해시 충분"
+        },
+        {
+          "name": "cbom-scout:scanners",
+          "value": "code"
+        },
+        {
+          "name": "cbom-scout:policy-action",
+          "value": "pass"
+        }
+      ],
+      "evidence": {
+        "occurrences": [
+          {
+            "location": "examples/demo-app/src/web.ts",
+            "line": 10,
+            "additionalContext": "export const enc = (k: Buffer, iv: Buffer) => createCipheriv(\"aes-256-gcm\", k, iv);"
+          }
+        ]
+      }
+    },
+    {
+      "type": "cryptographic-asset",
+      "bom-ref": "crypto/algorithm/AES-ECB",
+      "name": "AES-ECB",
+      "cryptoProperties": {
+        "assetType": "algorithm",
+        "algorithmProperties": {
+          "primitive": "block-cipher",
+          "nistQuantumSecurityLevel": 1,
+          "executionEnvironment": "software-plain-ram",
+          "mode": "ecb",
+          "cryptoFunctions": [
+            "encrypt"
+          ]
+        }
+      },
+      "properties": [
+        {
+          "name": "cbom-scout:status",
+          "value": "broken"
+        },
+        {
+          "name": "cbom-scout:status-label",
+          "value": "즉시 교체 (취약)"
+        },
+        {
+          "name": "cbom-scout:note",
+          "value": "ECB 모드 — 패턴이 드러남, 사용 금지"
+        },
+        {
+          "name": "cbom-scout:scanners",
+          "value": "code"
+        },
+        {
+          "name": "cbom-scout:policy-action",
+          "value": "fail"
+        }
+      ],
+      "evidence": {
+        "occurrences": [
+          {
+            "location": "examples/demo-app/src/payment.py",
+            "line": 26,
+            "additionalContext": "enc = Cipher(algorithms.AES(key), modes.ECB()).encryptor()   # 취약: ECB"
+          }
+        ]
+      }
+    },
+    {
+      "type": "cryptographic-asset",
+      "bom-ref": "crypto/algorithm/AES-GCM",
+      "name": "AES-GCM",
+      "cryptoProperties": {
+        "assetType": "algorithm",
+        "algorithmProperties": {
+          "primitive": "block-cipher",
+          "nistQuantumSecurityLevel": 1,
+          "executionEnvironment": "software-plain-ram",
+          "mode": "gcm",
+          "cryptoFunctions": [
+            "encrypt"
+          ]
+        }
+      },
+      "properties": [
+        {
+          "name": "cbom-scout:status",
+          "value": "symmetric-weak"
+        },
+        {
+          "name": "cbom-scout:status-label",
+          "value": "대칭키·해시 상향 권장"
+        },
+        {
+          "name": "cbom-scout:note",
+          "value": "키 길이 미확인 → AES-256 확인 필요"
+        },
+        {
+          "name": "cbom-scout:scanners",
+          "value": "code"
+        },
+        {
+          "name": "cbom-scout:policy-action",
+          "value": "info"
+        }
+      ],
+      "evidence": {
+        "occurrences": [
+          {
+            "location": "examples/demo-app/src/payment.py",
+            "line": 31,
+            "additionalContext": "return AESGCM(key).encrypt(nonce, data, None)"
+          }
+        ]
+      }
+    },
+    {
+      "type": "cryptographic-asset",
+      "bom-ref": "crypto/algorithm/DH-2048",
+      "name": "DH-2048",
+      "cryptoProperties": {
+        "assetType": "algorithm",
+        "algorithmProperties": {
+          "primitive": "key-agree",
+          "nistQuantumSecurityLevel": 0,
+          "executionEnvironment": "software-plain-ram",
+          "parameterSetIdentifier": "2048",
+          "cryptoFunctions": [
+            "keyderive"
+          ]
+        },
+        "oid": "1.2.840.113549.1.3.1"
+      },
+      "properties": [
+        {
+          "name": "cbom-scout:status",
+          "value": "quantum-vulnerable"
+        },
+        {
+          "name": "cbom-scout:status-label",
+          "value": "양자 취약 공개키"
+        },
+        {
+          "name": "cbom-scout:scanners",
+          "value": "code"
+        },
+        {
+          "name": "cbom-scout:policy-action",
+          "value": "warn"
+        }
+      ],
+      "evidence": {
+        "occurrences": [
+          {
+            "location": "examples/demo-app/config/sshd_config",
+            "line": 1,
+            "additionalContext": "KexAlgorithms mlkem768x25519-sha256,curve25519-sha256,diffie-hellman-group14-sha1"
+          }
+        ]
+      }
+    },
+    {
+      "type": "cryptographic-asset",
+      "bom-ref": "crypto/algorithm/EC-P-256",
+      "name": "EC-P-256",
+      "cryptoProperties": {
+        "assetType": "algorithm",
+        "algorithmProperties": {
+          "primitive": "pke",
+          "nistQuantumSecurityLevel": 0,
+          "executionEnvironment": "software-plain-ram",
+          "curve": "P-256",
+          "cryptoFunctions": [
+            "keygen",
+            "verify"
+          ]
+        },
+        "oid": "1.2.840.10045.2.1"
+      },
+      "properties": [
+        {
+          "name": "cbom-scout:status",
+          "value": "quantum-vulnerable"
+        },
+        {
+          "name": "cbom-scout:status-label",
+          "value": "양자 취약 공개키"
+        },
+        {
+          "name": "cbom-scout:note",
+          "value": "타원곡선 키"
+        },
+        {
+          "name": "cbom-scout:scanners",
+          "value": "certs,code"
+        },
+        {
+          "name": "cbom-scout:policy-action",
+          "value": "warn"
+        }
+      ],
+      "evidence": {
+        "occurrences": [
+          {
+            "location": "examples/demo-app/certs/device.pem"
+          },
+          {
+            "location": "examples/demo-app/src/payment.py",
+            "line": 14,
+            "additionalContext": "return ec.generate_private_key(ec.SECP256R1())"
+          }
+        ]
+      }
+    },
+    {
+      "type": "cryptographic-asset",
+      "bom-ref": "crypto/algorithm/ECDH-P-384",
+      "name": "ECDH-P-384",
+      "cryptoProperties": {
+        "assetType": "algorithm",
+        "algorithmProperties": {
+          "primitive": "key-agree",
+          "nistQuantumSecurityLevel": 0,
+          "executionEnvironment": "software-plain-ram",
+          "curve": "P-384",
+          "cryptoFunctions": [
+            "keyderive"
+          ]
+        },
+        "oid": "1.3.132.1.12"
+      },
+      "properties": [
+        {
+          "name": "cbom-scout:status",
+          "value": "quantum-vulnerable"
+        },
+        {
+          "name": "cbom-scout:status-label",
+          "value": "양자 취약 공개키"
+        },
+        {
+          "name": "cbom-scout:scanners",
+          "value": "code"
+        },
+        {
+          "name": "cbom-scout:policy-action",
+          "value": "warn"
+        }
+      ],
+      "evidence": {
+        "occurrences": [
+          {
+            "location": "examples/demo-app/config/nginx.conf",
+            "line": 4,
+            "additionalContext": "ssl_ecdh_curve X25519:secp384r1;"
+          }
+        ]
+      }
+    },
+    {
+      "type": "cryptographic-asset",
+      "bom-ref": "crypto/algorithm/ECDSA",
+      "name": "ECDSA",
+      "cryptoProperties": {
+        "assetType": "algorithm",
+        "algorithmProperties": {
+          "primitive": "signature",
+          "nistQuantumSecurityLevel": 0,
+          "executionEnvironment": "software-plain-ram",
+          "cryptoFunctions": [
+            "sign"
+          ]
+        },
+        "oid": "1.2.840.10045.2.1"
+      },
+      "properties": [
+        {
+          "name": "cbom-scout:status",
+          "value": "quantum-vulnerable"
+        },
+        {
+          "name": "cbom-scout:status-label",
+          "value": "양자 취약 공개키"
+        },
+        {
+          "name": "cbom-scout:scanners",
+          "value": "certs,code"
+        },
+        {
+          "name": "cbom-scout:policy-action",
+          "value": "warn"
+        }
+      ],
+      "evidence": {
+        "occurrences": [
+          {
+            "location": "examples/demo-app/certs/device.pem"
+          },
+          {
+            "location": "examples/demo-app/src/AuthService.java",
+            "line": 13,
+            "additionalContext": "Signature s = Signature.getInstance(\"SHA256withECDSA\");"
+          }
+        ]
+      }
+    },
+    {
+      "type": "cryptographic-asset",
+      "bom-ref": "crypto/algorithm/ECDSA-P-384",
+      "name": "ECDSA-P-384",
+      "cryptoProperties": {
+        "assetType": "algorithm",
+        "algorithmProperties": {
+          "primitive": "signature",
+          "nistQuantumSecurityLevel": 0,
+          "executionEnvironment": "software-plain-ram",
+          "curve": "P-384",
+          "cryptoFunctions": [
+            "keygen"
+          ]
+        },
+        "oid": "1.2.840.10045.2.1"
+      },
+      "properties": [
+        {
+          "name": "cbom-scout:status",
+          "value": "quantum-vulnerable"
+        },
+        {
+          "name": "cbom-scout:status-label",
+          "value": "양자 취약 공개키"
+        },
+        {
+          "name": "cbom-scout:scanners",
+          "value": "code"
+        },
+        {
+          "name": "cbom-scout:policy-action",
+          "value": "warn"
+        }
+      ],
+      "evidence": {
+        "occurrences": [
+          {
+            "location": "examples/demo-app/src/server.go",
+            "line": 20,
+            "additionalContext": "_, _ = ecdsa.GenerateKey(elliptic.P384(), rand.Reader)"
+          }
+        ]
+      }
+    },
+    {
+      "type": "cryptographic-asset",
+      "bom-ref": "crypto/algorithm/Ed25519",
+      "name": "Ed25519",
+      "cryptoProperties": {
+        "assetType": "algorithm",
+        "algorithmProperties": {
+          "primitive": "signature",
+          "nistQuantumSecurityLevel": 0,
+          "executionEnvironment": "software-plain-ram",
+          "cryptoFunctions": [
+            "sign"
+          ]
+        },
+        "oid": "1.3.101.112"
+      },
+      "properties": [
+        {
+          "name": "cbom-scout:status",
+          "value": "quantum-vulnerable"
+        },
+        {
+          "name": "cbom-scout:status-label",
+          "value": "양자 취약 공개키"
+        },
+        {
+          "name": "cbom-scout:scanners",
+          "value": "code"
+        },
+        {
+          "name": "cbom-scout:policy-action",
+          "value": "warn"
+        }
+      ],
+      "evidence": {
+        "occurrences": [
+          {
+            "location": "examples/demo-app/config/sshd_config",
+            "line": 2,
+            "additionalContext": "HostKeyAlgorithms ssh-ed25519,rsa-sha2-512,ssh-rsa"
+          }
+        ]
+      }
+    },
+    {
+      "type": "cryptographic-asset",
+      "bom-ref": "crypto/algorithm/MD5",
+      "name": "MD5",
+      "cryptoProperties": {
+        "assetType": "algorithm",
+        "algorithmProperties": {
+          "primitive": "hash",
+          "nistQuantumSecurityLevel": 0,
+          "executionEnvironment": "software-plain-ram",
+          "cryptoFunctions": [
+            "digest"
+          ]
+        }
+      },
+      "properties": [
+        {
+          "name": "cbom-scout:status",
+          "value": "broken"
+        },
+        {
+          "name": "cbom-scout:status-label",
+          "value": "즉시 교체 (취약)"
+        },
+        {
+          "name": "cbom-scout:note",
+          "value": "충돌 공격 가능 — 고전적으로도 취약"
+        },
+        {
+          "name": "cbom-scout:scanners",
+          "value": "code"
+        },
+        {
+          "name": "cbom-scout:policy-action",
+          "value": "fail"
+        }
+      ],
+      "evidence": {
+        "occurrences": [
+          {
+            "location": "examples/demo-app/src/payment.py",
+            "line": 18,
+            "additionalContext": "return hashlib.md5(data).hexdigest()          # 취약: MD5"
+          }
+        ]
+      }
+    },
+    {
+      "type": "cryptographic-asset",
+      "bom-ref": "crypto/algorithm/ML-KEM",
+      "name": "ML-KEM",
+      "cryptoProperties": {
+        "assetType": "algorithm",
+        "algorithmProperties": {
+          "primitive": "kem",
+          "nistQuantumSecurityLevel": 3,
+          "executionEnvironment": "software-plain-ram",
+          "cryptoFunctions": [
+            "encapsulate"
+          ]
+        }
+      },
+      "properties": [
+        {
+          "name": "cbom-scout:status",
+          "value": "pqc"
+        },
+        {
+          "name": "cbom-scout:status-label",
+          "value": "양자내성"
+        },
+        {
+          "name": "cbom-scout:note",
+          "value": "FIPS 203"
+        },
+        {
+          "name": "cbom-scout:scanners",
+          "value": "code"
+        },
+        {
+          "name": "cbom-scout:policy-action",
+          "value": "pass"
+        }
+      ],
+      "evidence": {
+        "occurrences": [
+          {
+            "location": "examples/demo-app/src/AuthService.java",
+            "line": 25,
+            "additionalContext": "KEM kem = KEM.getInstance(\"ML-KEM\");       // Java 24+ 양자내성 KEM"
+          }
+        ]
+      }
+    },
+    {
+      "type": "cryptographic-asset",
+      "bom-ref": "crypto/algorithm/ML-KEM-768",
+      "name": "ML-KEM-768",
+      "cryptoProperties": {
+        "assetType": "algorithm",
+        "algorithmProperties": {
+          "primitive": "kem",
+          "nistQuantumSecurityLevel": 3,
+          "executionEnvironment": "software-plain-ram",
+          "cryptoFunctions": [
+            "keygen"
+          ]
+        },
+        "oid": "2.16.840.1.101.3.4.4.2"
+      },
+      "properties": [
+        {
+          "name": "cbom-scout:status",
+          "value": "pqc"
+        },
+        {
+          "name": "cbom-scout:status-label",
+          "value": "양자내성"
+        },
+        {
+          "name": "cbom-scout:note",
+          "value": "FIPS 203 (기본 권장)"
+        },
+        {
+          "name": "cbom-scout:scanners",
+          "value": "code"
+        },
+        {
+          "name": "cbom-scout:policy-action",
+          "value": "pass"
+        }
+      ],
+      "evidence": {
+        "occurrences": [
+          {
+            "location": "examples/demo-app/src/server.go",
+            "line": 21,
+            "additionalContext": "_, _ = mlkem.GenerateKey768()"
+          }
+        ]
+      }
+    },
+    {
+      "type": "cryptographic-asset",
+      "bom-ref": "crypto/algorithm/RSA",
+      "name": "RSA",
+      "cryptoProperties": {
+        "assetType": "algorithm",
+        "algorithmProperties": {
+          "primitive": "pke",
+          "nistQuantumSecurityLevel": 0,
+          "executionEnvironment": "software-plain-ram",
+          "cryptoFunctions": [
+            "sign"
+          ]
+        },
+        "oid": "1.2.840.113549.1.1.1"
+      },
+      "properties": [
+        {
+          "name": "cbom-scout:status",
+          "value": "quantum-vulnerable"
+        },
+        {
+          "name": "cbom-scout:status-label",
+          "value": "양자 취약 공개키"
+        },
+        {
+          "name": "cbom-scout:scanners",
+          "value": "certs,code"
+        },
+        {
+          "name": "cbom-scout:policy-action",
+          "value": "warn"
+        }
+      ],
+      "evidence": {
+        "occurrences": [
+          {
+            "location": "examples/demo-app/certs/api.crt"
+          },
+          {
+            "location": "examples/demo-app/config/sshd_config",
+            "line": 2,
+            "additionalContext": "HostKeyAlgorithms ssh-ed25519,rsa-sha2-512,ssh-rsa"
+          }
+        ]
+      }
+    },
+    {
+      "type": "cryptographic-asset",
+      "bom-ref": "crypto/algorithm/RSA-1024",
+      "name": "RSA-1024",
+      "cryptoProperties": {
+        "assetType": "algorithm",
+        "algorithmProperties": {
+          "primitive": "pke",
+          "nistQuantumSecurityLevel": 0,
+          "executionEnvironment": "software-plain-ram",
+          "parameterSetIdentifier": "1024",
+          "cryptoFunctions": [
+            "keygen"
+          ]
+        },
+        "oid": "1.2.840.113549.1.1.1"
+      },
+      "properties": [
+        {
+          "name": "cbom-scout:status",
+          "value": "broken"
+        },
+        {
+          "name": "cbom-scout:status-label",
+          "value": "즉시 교체 (취약)"
+        },
+        {
+          "name": "cbom-scout:note",
+          "value": "1024비트 — 고전적으로도 취약 (최소 2048비트)"
+        },
+        {
+          "name": "cbom-scout:scanners",
+          "value": "code"
+        },
+        {
+          "name": "cbom-scout:policy-action",
+          "value": "fail"
+        }
+      ],
+      "evidence": {
+        "occurrences": [
+          {
+            "location": "examples/demo-app/src/AuthService.java",
+            "line": 7,
+            "additionalContext": "KeyPairGenerator kpg = KeyPairGenerator.getInstance(\"RSA\");"
+          }
+        ]
+      }
+    },
+    {
+      "type": "cryptographic-asset",
+      "bom-ref": "crypto/algorithm/RSA-2048",
+      "name": "RSA-2048",
+      "cryptoProperties": {
+        "assetType": "algorithm",
+        "algorithmProperties": {
+          "primitive": "pke",
+          "nistQuantumSecurityLevel": 0,
+          "executionEnvironment": "software-plain-ram",
+          "parameterSetIdentifier": "2048",
+          "cryptoFunctions": [
+            "keygen",
+            "verify"
+          ]
+        },
+        "oid": "1.2.840.113549.1.1.1"
+      },
+      "properties": [
+        {
+          "name": "cbom-scout:status",
+          "value": "quantum-vulnerable"
+        },
+        {
+          "name": "cbom-scout:status-label",
+          "value": "양자 취약 공개키"
+        },
+        {
+          "name": "cbom-scout:scanners",
+          "value": "certs,code"
+        },
+        {
+          "name": "cbom-scout:policy-action",
+          "value": "warn"
+        }
+      ],
+      "evidence": {
+        "occurrences": [
+          {
+            "location": "examples/demo-app/certs/api.crt"
+          },
+          {
+            "location": "examples/demo-app/src/payment.py",
+            "line": 10,
+            "additionalContext": "return rsa.generate_private_key(public_exponent=65537, key_size=2048)"
+          }
+        ]
+      }
+    },
+    {
+      "type": "cryptographic-asset",
+      "bom-ref": "crypto/algorithm/RSA-3072",
+      "name": "RSA-3072",
+      "cryptoProperties": {
+        "assetType": "algorithm",
+        "algorithmProperties": {
+          "primitive": "pke",
+          "nistQuantumSecurityLevel": 0,
+          "executionEnvironment": "software-plain-ram",
+          "parameterSetIdentifier": "3072",
+          "cryptoFunctions": [
+            "keygen"
+          ]
+        },
+        "oid": "1.2.840.113549.1.1.1"
+      },
+      "properties": [
+        {
+          "name": "cbom-scout:status",
+          "value": "quantum-vulnerable"
+        },
+        {
+          "name": "cbom-scout:status-label",
+          "value": "양자 취약 공개키"
+        },
+        {
+          "name": "cbom-scout:scanners",
+          "value": "code"
+        },
+        {
+          "name": "cbom-scout:policy-action",
+          "value": "warn"
+        }
+      ],
+      "evidence": {
+        "occurrences": [
+          {
+            "location": "examples/demo-app/src/web.ts",
+            "line": 4,
+            "additionalContext": "return generateKeyPairSync(\"rsa\", {"
+          }
+        ]
+      }
+    },
+    {
+      "type": "cryptographic-asset",
+      "bom-ref": "crypto/algorithm/SHA-1",
+      "name": "SHA-1",
+      "cryptoProperties": {
+        "assetType": "algorithm",
+        "algorithmProperties": {
+          "primitive": "hash",
+          "nistQuantumSecurityLevel": 0,
+          "executionEnvironment": "software-plain-ram",
+          "cryptoFunctions": [
+            "digest"
+          ]
+        }
+      },
+      "properties": [
+        {
+          "name": "cbom-scout:status",
+          "value": "broken"
+        },
+        {
+          "name": "cbom-scout:status-label",
+          "value": "즉시 교체 (취약)"
+        },
+        {
+          "name": "cbom-scout:note",
+          "value": "충돌 공격 가능 — 서명·무결성 용도 금지"
+        },
+        {
+          "name": "cbom-scout:scanners",
+          "value": "code"
+        },
+        {
+          "name": "cbom-scout:policy-action",
+          "value": "fail"
+        }
+      ],
+      "evidence": {
+        "occurrences": [
+          {
+            "location": "examples/demo-app/config/sshd_config",
+            "line": 2,
+            "additionalContext": "HostKeyAlgorithms ssh-ed25519,rsa-sha2-512,ssh-rsa"
+          },
+          {
+            "location": "examples/demo-app/src/server.go",
+            "line": 22,
+            "additionalContext": "_ = sha1.Sum([]byte(\"legacy\"))"
+          },
+          {
+            "location": "examples/demo-app/src/web.ts",
+            "line": 9,
+            "additionalContext": "export const etag = (s: string) => createHash(\"sha1\").update(s).digest(\"hex\");"
+          }
+        ]
+      }
+    },
+    {
+      "type": "cryptographic-asset",
+      "bom-ref": "crypto/algorithm/SHA-256",
+      "name": "SHA-256",
+      "cryptoProperties": {
+        "assetType": "algorithm",
+        "algorithmProperties": {
+          "primitive": "hash",
+          "nistQuantumSecurityLevel": 2,
+          "executionEnvironment": "software-plain-ram",
+          "cryptoFunctions": [
+            "digest"
+          ]
+        }
+      },
+      "properties": [
+        {
+          "name": "cbom-scout:status",
+          "value": "symmetric-weak"
+        },
+        {
+          "name": "cbom-scout:status-label",
+          "value": "대칭키·해시 상향 권장"
+        },
+        {
+          "name": "cbom-scout:note",
+          "value": "현재 허용, 장기적으로 SHA-384 이상 권장"
+        },
+        {
+          "name": "cbom-scout:scanners",
+          "value": "certs,code"
+        },
+        {
+          "name": "cbom-scout:policy-action",
+          "value": "info"
+        }
+      ],
+      "evidence": {
+        "occurrences": [
+          {
+            "location": "examples/demo-app/certs/api.crt"
+          },
+          {
+            "location": "examples/demo-app/src/AuthService.java",
+            "line": 13,
+            "additionalContext": "Signature s = Signature.getInstance(\"SHA256withECDSA\");"
+          },
+          {
+            "location": "examples/demo-app/src/payment.py",
+            "line": 22,
+            "additionalContext": "return hashlib.sha256(data).hexdigest()"
+          }
+        ]
+      }
+    },
+    {
+      "type": "cryptographic-asset",
+      "bom-ref": "crypto/algorithm/SHA-384",
+      "name": "SHA-384",
+      "cryptoProperties": {
+        "assetType": "algorithm",
+        "algorithmProperties": {
+          "primitive": "hash",
+          "nistQuantumSecurityLevel": 4,
+          "executionEnvironment": "software-plain-ram",
+          "cryptoFunctions": [
+            "digest"
+          ]
+        }
+      },
+      "properties": [
+        {
+          "name": "cbom-scout:status",
+          "value": "symmetric-ok"
+        },
+        {
+          "name": "cbom-scout:status-label",
+          "value": "대칭키·해시 충분"
+        },
+        {
+          "name": "cbom-scout:scanners",
+          "value": "certs"
+        },
+        {
+          "name": "cbom-scout:policy-action",
+          "value": "pass"
+        }
+      ],
+      "evidence": {
+        "occurrences": [
+          {
+            "location": "examples/demo-app/certs/device.pem"
+          }
+        ]
+      }
+    },
+    {
+      "type": "cryptographic-asset",
+      "bom-ref": "crypto/algorithm/SHA-512",
+      "name": "SHA-512",
+      "cryptoProperties": {
+        "assetType": "algorithm",
+        "algorithmProperties": {
+          "primitive": "hash",
+          "nistQuantumSecurityLevel": 5,
+          "executionEnvironment": "software-plain-ram",
+          "cryptoFunctions": [
+            "digest"
+          ]
+        }
+      },
+      "properties": [
+        {
+          "name": "cbom-scout:status",
+          "value": "symmetric-ok"
+        },
+        {
+          "name": "cbom-scout:status-label",
+          "value": "대칭키·해시 충분"
+        },
+        {
+          "name": "cbom-scout:scanners",
+          "value": "code"
+        },
+        {
+          "name": "cbom-scout:policy-action",
+          "value": "pass"
+        }
+      ],
+      "evidence": {
+        "occurrences": [
+          {
+            "location": "examples/demo-app/config/sshd_config",
+            "line": 2,
+            "additionalContext": "HostKeyAlgorithms ssh-ed25519,rsa-sha2-512,ssh-rsa"
+          }
+        ]
+      }
+    },
+    {
+      "type": "cryptographic-asset",
+      "bom-ref": "crypto/algorithm/X25519",
+      "name": "X25519",
+      "cryptoProperties": {
+        "assetType": "algorithm",
+        "algorithmProperties": {
+          "primitive": "key-agree",
+          "nistQuantumSecurityLevel": 0,
+          "executionEnvironment": "software-plain-ram",
+          "cryptoFunctions": [
+            "keyderive"
+          ]
+        },
+        "oid": "1.3.101.110"
+      },
+      "properties": [
+        {
+          "name": "cbom-scout:status",
+          "value": "quantum-vulnerable"
+        },
+        {
+          "name": "cbom-scout:status-label",
+          "value": "양자 취약 공개키"
+        },
+        {
+          "name": "cbom-scout:scanners",
+          "value": "code"
+        },
+        {
+          "name": "cbom-scout:policy-action",
+          "value": "warn"
+        }
+      ],
+      "evidence": {
+        "occurrences": [
+          {
+            "location": "examples/demo-app/config/nginx.conf",
+            "line": 4,
+            "additionalContext": "ssl_ecdh_curve X25519:secp384r1;"
+          },
+          {
+            "location": "examples/demo-app/config/sshd_config",
+            "line": 1,
+            "additionalContext": "KexAlgorithms mlkem768x25519-sha256,curve25519-sha256,diffie-hellman-group14-sha1"
+          },
+          {
+            "location": "examples/demo-app/src/server.go",
+            "line": 15,
+            "additionalContext": "CurvePreferences: []tls.CurveID{tls.X25519MLKEM768, tls.X25519},"
+          }
+        ]
+      }
+    },
+    {
+      "type": "cryptographic-asset",
+      "bom-ref": "crypto/algorithm/X25519MLKEM768",
+      "name": "X25519MLKEM768",
+      "cryptoProperties": {
+        "assetType": "algorithm",
+        "algorithmProperties": {
+          "primitive": "kem",
+          "nistQuantumSecurityLevel": 3,
+          "executionEnvironment": "software-plain-ram",
+          "cryptoFunctions": [
+            "keyderive"
+          ]
+        }
+      },
+      "properties": [
+        {
+          "name": "cbom-scout:status",
+          "value": "hybrid"
+        },
+        {
+          "name": "cbom-scout:status-label",
+          "value": "하이브리드 (전환기 권장)"
+        },
+        {
+          "name": "cbom-scout:note",
+          "value": "X25519 + ML-KEM-768 (TLS 하이브리드)"
+        },
+        {
+          "name": "cbom-scout:scanners",
+          "value": "code"
+        },
+        {
+          "name": "cbom-scout:policy-action",
+          "value": "pass"
+        }
+      ],
+      "evidence": {
+        "occurrences": [
+          {
+            "location": "examples/demo-app/config/sshd_config",
+            "line": 1,
+            "additionalContext": "KexAlgorithms mlkem768x25519-sha256,curve25519-sha256,diffie-hellman-group14-sha1"
+          },
+          {
+            "location": "examples/demo-app/src/server.go",
+            "line": 15,
+            "additionalContext": "CurvePreferences: []tls.CurveID{tls.X25519MLKEM768, tls.X25519},"
+          }
+        ]
+      }
+    },
+    {
+      "type": "cryptographic-asset",
+      "bom-ref": "crypto/certificate/79cad0ab282df80aa133278f",
+      "name": "O=Demo Corp,CN=api.demo.example",
+      "cryptoProperties": {
+        "assetType": "certificate",
+        "certificateProperties": {
+          "subjectName": "O=Demo Corp,CN=api.demo.example",
+          "issuerName": "O=Demo Corp,CN=api.demo.example",
+          "notValidBefore": "2026-01-01T00:00:00Z",
+          "notValidAfter": "2035-12-30T00:00:00Z",
+          "certificateFormat": "X.509",
+          "signatureAlgorithmRef": "crypto/algorithm/RSA",
+          "subjectPublicKeyRef": "crypto/key/public-key/79cad0ab282df80a"
+        }
+      },
+      "properties": [
+        {
+          "name": "cbom-scout:status",
+          "value": "quantum-vulnerable"
+        },
+        {
+          "name": "cbom-scout:status-label",
+          "value": "양자 취약 공개키"
+        },
+        {
+          "name": "cbom-scout:note",
+          "value": "RSA 키 인증서 — PQC(ML-DSA) 인증서로 교체 계획 필요"
+        },
+        {
+          "name": "cbom-scout:scanners",
+          "value": "certs"
+        },
+        {
+          "name": "cbom-scout:policy-action",
+          "value": "warn"
+        }
+      ],
+      "evidence": {
+        "occurrences": [
+          {
+            "location": "examples/demo-app/certs/api.crt"
+          }
+        ]
+      }
+    },
+    {
+      "type": "cryptographic-asset",
+      "bom-ref": "crypto/certificate/8a8b4adb24ad816ba1cb2080",
+      "name": "O=Demo Corp,CN=device.demo.example",
+      "cryptoProperties": {
+        "assetType": "certificate",
+        "certificateProperties": {
+          "subjectName": "O=Demo Corp,CN=device.demo.example",
+          "issuerName": "O=Demo Corp,CN=device.demo.example",
+          "notValidBefore": "2026-01-01T00:00:00Z",
+          "notValidAfter": "2035-12-30T00:00:00Z",
+          "certificateFormat": "X.509",
+          "signatureAlgorithmRef": "crypto/algorithm/ECDSA",
+          "subjectPublicKeyRef": "crypto/key/public-key/8a8b4adb24ad816b"
+        }
+      },
+      "properties": [
+        {
+          "name": "cbom-scout:status",
+          "value": "quantum-vulnerable"
+        },
+        {
+          "name": "cbom-scout:status-label",
+          "value": "양자 취약 공개키"
+        },
+        {
+          "name": "cbom-scout:note",
+          "value": "EC 키 인증서 — PQC(ML-DSA) 인증서로 교체 계획 필요"
+        },
+        {
+          "name": "cbom-scout:scanners",
+          "value": "certs"
+        },
+        {
+          "name": "cbom-scout:policy-action",
+          "value": "warn"
+        }
+      ],
+      "evidence": {
+        "occurrences": [
+          {
+            "location": "examples/demo-app/certs/device.pem"
+          }
+        ]
+      }
+    },
+    {
+      "type": "cryptographic-asset",
+      "bom-ref": "crypto/key/public-key/79cad0ab282df80a",
+      "name": "public-key:79cad0ab282df80a",
+      "cryptoProperties": {
+        "assetType": "related-crypto-material",
+        "relatedCryptoMaterialProperties": {
+          "type": "public-key",
+          "algorithmRef": "crypto/algorithm/RSA-2048",
+          "size": 2048
+        }
+      },
+      "properties": [
+        {
+          "name": "cbom-scout:status",
+          "value": "quantum-vulnerable"
+        },
+        {
+          "name": "cbom-scout:status-label",
+          "value": "양자 취약 공개키"
+        },
+        {
+          "name": "cbom-scout:scanners",
+          "value": "certs"
+        },
+        {
+          "name": "cbom-scout:policy-action",
+          "value": "warn"
+        }
+      ],
+      "evidence": {
+        "occurrences": [
+          {
+            "location": "examples/demo-app/certs/api.crt"
+          }
+        ]
+      }
+    },
+    {
+      "type": "cryptographic-asset",
+      "bom-ref": "crypto/key/public-key/8a8b4adb24ad816b",
+      "name": "public-key:8a8b4adb24ad816b",
+      "cryptoProperties": {
+        "assetType": "related-crypto-material",
+        "relatedCryptoMaterialProperties": {
+          "type": "public-key",
+          "algorithmRef": "crypto/algorithm/EC-P-256",
+          "size": 256
+        }
+      },
+      "properties": [
+        {
+          "name": "cbom-scout:status",
+          "value": "quantum-vulnerable"
+        },
+        {
+          "name": "cbom-scout:status-label",
+          "value": "양자 취약 공개키"
+        },
+        {
+          "name": "cbom-scout:scanners",
+          "value": "certs"
+        },
+        {
+          "name": "cbom-scout:policy-action",
+          "value": "warn"
+        }
+      ],
+      "evidence": {
+        "occurrences": [
+          {
+            "location": "examples/demo-app/certs/device.pem"
+          }
+        ]
+      }
+    },
+    {
+      "type": "cryptographic-asset",
+      "bom-ref": "crypto/protocol/tls/examples-demo-app-config-nginx.conf-3",
+      "name": "TLS examples/demo-app/config/nginx.conf:3",
+      "cryptoProperties": {
+        "assetType": "protocol",
+        "protocolProperties": {
+          "type": "tls",
+          "version": "TLSv1.2 TLSv1.3"
+        }
+      },
+      "properties": [
+        {
+          "name": "cbom-scout:note",
+          "value": "TLS 1.3 허용 (하이브리드 그룹 설정은 별도 확인)"
+        },
+        {
+          "name": "cbom-scout:scanners",
+          "value": "code"
+        },
+        {
+          "name": "cbom-scout:policy-action",
+          "value": "info"
+        }
+      ],
+      "evidence": {
+        "occurrences": [
+          {
+            "location": "examples/demo-app/config/nginx.conf:3"
+          }
+        ]
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "ref": "crypto/certificate/79cad0ab282df80aa133278f",
+      "dependsOn": [
+        "crypto/algorithm/RSA",
+        "crypto/key/public-key/79cad0ab282df80a"
+      ]
+    },
+    {
+      "ref": "crypto/certificate/8a8b4adb24ad816ba1cb2080",
+      "dependsOn": [
+        "crypto/algorithm/ECDSA",
+        "crypto/key/public-key/8a8b4adb24ad816b"
+      ]
+    },
+    {
+      "ref": "crypto/key/public-key/79cad0ab282df80a",
+      "dependsOn": [
+        "crypto/algorithm/RSA-2048"
+      ]
+    },
+    {
+      "ref": "crypto/key/public-key/8a8b4adb24ad816b",
+      "dependsOn": [
+        "crypto/algorithm/EC-P-256"
+      ]
+    }
+  ]
+}

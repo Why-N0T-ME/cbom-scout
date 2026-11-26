@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.9", "3.11", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - run: python -m pip install -e ".[dev]"
+      - run: python -m pytest -q
+
+  action-demo:
+    # 이 저장소의 Action 을 데모 앱에 돌려 본다. 데모 앱에는 의도적으로
+    # 취약한 암호가 들어 있으므로 정책 위반(종료 코드 1)이 나와야 정상이다.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - id: scout
+        uses: ./
+        with:
+          path: examples/demo-app
+          fail-on: never
+          output: demo-cbom.json
+      - name: 결과 확인
+        run: |
+          test -s demo-cbom.json
+          python -c "import json;b=json.load(open('demo-cbom.json'));assert b['specVersion']=='1.6' and len(b['components'])>20"
+          echo "cbom-scout exit-code=${{ steps.scout.outputs.exit-code }}"
