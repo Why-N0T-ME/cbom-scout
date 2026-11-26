@@ -304,3 +304,28 @@ def test_check_clears_stale_baseline_marks(ws):
     assert "cbom-scout:baseline" not in read("re.json")
     main(["check", "cur.json", "-o", "re2.json", "--fail-on", "never"])
     assert "cbom-scout:baseline" not in read("re2.json")
+
+
+def test_baseline_without_or_duplicate_bom_ref(ws, capsys):
+    write(ws / "app/a.py", "import hashlib\nhashlib.sha384(b'')\n")
+    c = {"type": "cryptographic-asset", "name": "md5",
+         "cryptoProperties": {"assetType": "algorithm", "algorithmProperties": {"primitive": "hash"}},
+         "evidence": {"occurrences": [{"location": "app/a.py"}]}}
+    write(ws / "base.json", json.dumps({"bomFormat": "CycloneDX", "components": [c]}))   # bom-ref 없음
+    assert run() == 0
+    assert "해결 1건" in capsys.readouterr().err
+    d = dict(c, **{"bom-ref": "dup"})
+    write(ws / "base.json", json.dumps({"bomFormat": "CycloneDX", "components": [d, d]}))  # 중복
+    assert run() == 0
+    assert "해결 1건" in capsys.readouterr().err
+
+
+@pytest.mark.parametrize("props", [[{"name": "cbom-scout:scanners", "value": 5}],
+                                   [{"name": "cbom-scout:status", "value": ["broken"]}],
+                                   [{"name": 1, "value": "x"}]])
+def test_non_string_property_is_baseline_error(ws, capsys, props):
+    write(ws / "app/a.py", MD5)
+    c = {"type": "cryptographic-asset", "name": "md5", "properties": props}
+    write(ws / "base.json", json.dumps({"bomFormat": "CycloneDX", "components": [c]}))
+    assert run() == 2
+    assert "Traceback" not in capsys.readouterr().err

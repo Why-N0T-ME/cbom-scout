@@ -93,6 +93,10 @@ def _component_problem(comp) -> str:
     props = comp.get("properties", [])
     if not isinstance(props, list) or not all(isinstance(p, dict) for p in props):
         return "properties 가 객체 목록이 아님"
+    for p in props:
+        for k in ("name", "value"):
+            if k in p and not isinstance(p[k], str):
+                return f"properties[].{k} 가 문자열이 아님"
     return ""
 
 
@@ -249,14 +253,22 @@ def compare(bom: dict, result: Result, baseline: dict, policy: dict, today=None)
     # 해결됨: 기준선을 현재 정책으로 평가해 위반인 단위 중 현재 스캔에 없는 것
     resolved = []
     if base_comps:
+        # bom-ref 는 CycloneDX 에서 선택 필드이고 중복될 수도 있다. 재평가용 사본에는 고유 ref 를 붙인다.
         bb = {"components": copy.deepcopy(base_comps)}
-        bres = evaluate(bb, policy, today=today)
-        bmap = {c.get("bom-ref"): c for c in bb["components"]}
+        for i, c in enumerate(bb["components"]):
+            c["bom-ref"] = f"baseline/{i}"
+        try:
+            bres = evaluate(bb, policy, today=today)
+        except (KeyError, TypeError, ValueError, AttributeError) as e:
+            raise BaselineError(f"기준선 구성요소를 평가할 수 없습니다 ({e.__class__.__name__})") from None
+        bmap = {c["bom-ref"]: c for c in bb["components"]}
+        seen: set = set()     # 같은 발견 단위가 여러 구성요소에 있어도 한 번만 센다
         for f in bres.findings:
             if f.action == "pass":
                 continue
-            comp = bmap.get(f.ref, {})
-            gone = [(u, ds) for u, ds in units_of(comp).items() if u not in cur_units]
+            comp = bmap[f.ref]
+            gone = [(u, ds) for u, ds in units_of(comp).items() if u not in cur_units and u not in seen]
+            seen.update(u for u, _ in gone)
             if gone:
                 resolved.append(_entry(f, comp, gone))
 

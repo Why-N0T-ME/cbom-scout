@@ -59,8 +59,12 @@ def _finish(bom: dict, args, baseline: Optional[dict] = None) -> int:
     result = evaluate(bom, policy)
     diff = None
     if baseline is not None:
-        from .baseline import compare
-        diff = compare(bom, result, baseline, policy)
+        from .baseline import BaselineError, compare
+        try:
+            diff = compare(bom, result, baseline, policy)
+        except BaselineError as e:   # 출력 파일을 쓰기 전이므로 아무것도 남지 않는다
+            print(f"cbom-scout: {e}: {args.baseline}", file=sys.stderr)
+            return 2
     if getattr(args, "output", None):
         save(bom, args.output)
     md = to_markdown(bom, result, diff=diff)
