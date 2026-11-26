@@ -235,4 +235,8 @@ pytest -q
 
 ## 라이선스
 
-Apache License 2.0. `tests/schemas/` 의 CycloneDX 스키마는 OWASP CycloneDX 프로젝트의 것입니다(Apache-2.0).
+Apache License 2.0 ([LICENSE](LICENSE)).
+
+저장소에 들어 있는 외부 파일(현재 `tests/schemas/` 의 OWASP CycloneDX 스키마, Apache-2.0)의 출처와 라이선스는
+[NOTICE](NOTICE) 와 [third_party.json](third_party.json) 에 정리돼 있습니다. 모두 테스트 전용이며 배포 패키지에는 포함되지 않습니다.
+외부 코드·데이터를 추가하는 규칙은 [CLAUDE.md](CLAUDE.md) 의 "외부 코드·데이터" 절을 따릅니다.

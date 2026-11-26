@@ -1,0 +1,29 @@
+cbom-scout
+Copyright 2026 cbom-scout contributors
+Apache License 2.0 (LICENSE 참고)
+
+이 저장소에는 아래 외부 파일이 들어 있습니다. 모두 테스트 전용이며 배포 패키지(wheel)에는
+포함되지 않습니다. 기계가 읽는 목록은 third_party.json 에 있습니다.
+
+------------------------------------------------------------------------
+CycloneDX Bill of Materials JSON Schema 1.6
+  경로:     tests/schemas/bom-1.6.schema.json
+  원저작:   OWASP CycloneDX
+  라이선스: Apache License 2.0
+  원본:     https://github.com/CycloneDX/specification
+  비고:     cyclonedx-python-lib 11.13.0 배포본에서 복사, 수정 없음
+
+JSON Signature Format (JSF) Schema 0.82
+  경로:     tests/schemas/jsf-0.82.schema.json
+  원저작:   Anders Rundgren (OpenKeyStore 프로젝트), OWASP CycloneDX 배포
+  라이선스: Apache License 2.0
+  원본:     https://github.com/CycloneDX/specification
+  비고:     cyclonedx-python-lib 11.13.0 배포본에서 복사, 수정 없음
+
+CycloneDX SPDX License ID Schema
+  경로:     tests/schemas/spdx.schema.json
+  원저작:   OWASP CycloneDX (SPDX 라이선스 목록 기반)
+  라이선스: Apache License 2.0 (파일 안 표기 없음, 배포 저장소와 배포본 라이선스 기준)
+  원본:     https://github.com/CycloneDX/specification
+  비고:     cyclonedx-python-lib 11.13.0 배포본에서 복사, 수정 없음
+------------------------------------------------------------------------
