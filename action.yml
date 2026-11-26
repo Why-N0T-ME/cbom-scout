@@ -24,6 +24,9 @@ inputs:
   fail-on:
     description: "이 수준 이상이면 실패 (fail, warn, info, never)"
     default: "fail"
+  baseline:
+    description: "기준 CBOM 파일 경로 (예: main 브랜치 스캔 결과). 주면 기준선 대비 새로 생긴 위반만 실패로 처리한다. 비우면 전체 평가"
+    default: ""
   output:
     description: "CBOM 파일 경로"
     default: "cbom.json"
@@ -39,7 +42,7 @@ outputs:
     description: "생성된 CBOM 경로"
     value: ${{ steps.scan.outputs.cbom }}
   exit-code:
-    description: "cbom-scout 종료 코드 (0 통과, 1 정책 위반)"
+    description: "cbom-scout 종료 코드 (0 통과, 1 정책 위반 — 기준선을 주면 신규 위반만, 2 사용법·기준선 파일 오류)"
     value: ${{ steps.scan.outputs.exit-code }}
 
 runs:
@@ -64,6 +67,7 @@ runs:
         IN_POLICY: ${{ inputs.policy }}
         IN_FAIL_ON: ${{ inputs.fail-on }}
         IN_OUTPUT: ${{ inputs.output }}
+        IN_BASELINE: ${{ inputs.baseline }}
       run: |
         set +e
         args=(scan)
@@ -71,6 +75,7 @@ runs:
         for t in $IN_TLS; do args+=(--tls "$t"); done
         for e in $IN_EXCLUDE; do args+=(--exclude "$e"); done
         if [ -n "$IN_TLS_FILE" ]; then args+=(--tls-file "$IN_TLS_FILE"); fi
+        if [ -n "$IN_BASELINE" ]; then args+=(--baseline "$IN_BASELINE"); fi
         args+=(--policy "$IN_POLICY" --fail-on "$IN_FAIL_ON" -o "$IN_OUTPUT")
         args+=(--markdown cbom-report.md --html cbom-report.html -v)
         cbom-scout "${args[@]}"

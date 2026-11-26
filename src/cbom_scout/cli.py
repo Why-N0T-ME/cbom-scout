@@ -14,7 +14,7 @@ from typing import Optional
 from . import __version__
 from .cbom import inventory_from_boms, load, save, to_cbom
 from .inventory import Inventory
-from .policy import ACTIONS, evaluate, load_policy, should_fail
+from .policy import ACTIONS, evaluate, fails_at, load_policy, should_fail
 from .report import ACTION_KO, summary_stats, to_html, to_markdown
 
 BUILTIN_POLICIES = {
@@ -39,18 +39,41 @@ def _targets(args) -> list[str]:
     return t
 
 
-def _finish(bom: dict, args) -> int:
+def _load_baseline(args) -> tuple[Optional[dict], int]:
+    """--baseline 이 있으면 스캔 전에 읽는다. 오류면 (None, 2) — 출력 파일은 만들지 않는다."""
+    path = getattr(args, "baseline", None)
+    if not path:
+        return None, 0
+    from .baseline import BaselineError, load_baseline
+    try:
+        return load_baseline(path), 0
+    except BaselineError as e:
+        print(f"cbom-scout: {e}", file=sys.stderr)
+        return None, 2
+
+
+def _finish(bom: dict, args, baseline: Optional[dict] = None) -> int:
+    from .baseline import clear_marks
+    clear_marks(bom)   # check 입력에 남은 이전 비교 결과는 이번 평가와 무관하다
     policy = load_policy(_policy_path(args.policy))
     result = evaluate(bom, policy)
+    diff = None
+    if baseline is not None:
+        from .baseline import BaselineError, compare
+        try:
+            diff = compare(bom, result, baseline, policy)
+        except BaselineError as e:   # 출력 파일을 쓰기 전이므로 아무것도 남지 않는다
+            print(f"cbom-scout: {e}: {args.baseline}", file=sys.stderr)
+            return 2
     if getattr(args, "output", None):
         save(bom, args.output)
-    md = to_markdown(bom, result)
+    md = to_markdown(bom, result, diff=diff)
     if args.markdown:
         with open(args.markdown, "w", encoding="utf-8") as fh:
             fh.write(md)
     if args.html:
         with open(args.html, "w", encoding="utf-8") as fh:
-            fh.write(to_html(bom, result))
+            fh.write(to_html(bom, result, diff=diff))
     gh = os.environ.get("GITHUB_STEP_SUMMARY")
     if gh and not args.no_github_summary:
         with open(gh, "a", encoding="utf-8") as fh:
@@ -60,19 +83,35 @@ def _finish(bom: dict, args) -> int:
     print(f"cbom-scout: 자산 {s['total']}개 (알고리즘 {s['algorithms']}, 취약 {s['vulnerable_algorithms']}, "
           f"PQC·하이브리드 {s['pqc_algorithms']}) · 실패 {c['fail']} / 경고 {c['warn']} / "
           f"참고 {c['info']} / 통과 {c['pass']} → {ACTION_KO[result.worst()]}", file=sys.stderr)
+    if diff is not None:
+        from .baseline import NO_OVERLAP_WARNING, summary_line
+        print(summary_line(diff, ACTION_KO), file=sys.stderr)
+        if diff.no_overlap:
+            print(NO_OVERLAP_WARNING, file=sys.stderr)
     if args.verbose:
-        for f in result.findings:
-            if f.action != "pass":
-                print(f"  [{f.action.upper():4}] {f.name}: {f.message}  @ {', '.join(f.locations[:3])}",
-                      file=sys.stderr)
+        if diff is None:
+            for f in result.findings:
+                if f.action != "pass":
+                    print(f"  [{f.action.upper():4}] {f.name}: {f.message}  @ {', '.join(f.locations[:3])}",
+                          file=sys.stderr)
+        else:
+            for tag, entries in (("신규", diff.new), ("기존", diff.existing)):
+                for e in entries:
+                    print(f"  [{tag}] [{e.action.upper():4}] {e.name}: {e.message}  @ {', '.join(e.locations[:3])}",
+                          file=sys.stderr)
+            for e in diff.resolved:
+                print(f"  [해결] {e.name}  @ {', '.join(e.paths[:3])}", file=sys.stderr)
     if os.environ.get("GITHUB_ACTIONS") == "true":
-        for f in result.findings:
+        # 기준선이 있으면 신규 위치에만 주석을 단다
+        for f in (diff.new if diff is not None else result.findings):
             if f.action in ("fail", "warn"):
                 level = "error" if f.action == "fail" else "warning"
                 for loc in f.locations[:5]:
                     path, _, line = loc.partition(":")
                     if os.path.isfile(path) and line.isdigit():
                         print(f"::{level} file={path},line={line},title=cbom-scout {f.name}::{f.message}")
+    if diff is not None:
+        return 1 if fails_at(diff.worst(), args.fail_on) else 0
     if should_fail(result, args.fail_on):
         return 1
     return 0
@@ -102,6 +141,9 @@ def cmd_scan(args) -> int:
     from .scanners.code import scan_code
     from .scanners.certs import scan_certs
 
+    baseline, err = _load_baseline(args)
+    if err:
+        return err
     inv = Inventory()
     paths = args.paths or ([] if (args.tls or args.tls_file) else ["."])
     for p in paths:
@@ -131,13 +173,16 @@ def cmd_scan(args) -> int:
             inv.merge_component(comp)
     subject = args.name or os.path.basename(os.path.abspath(paths[0])) if paths else (args.name or "tls-scan")
     bom = to_cbom(inv, subject=subject)
-    return _finish(bom, args)
+    return _finish(bom, args, baseline)
 
 
 def cmd_check(args) -> int:
+    baseline, err = _load_baseline(args)
+    if err:
+        return err
     inv = inventory_from_boms(load(p) for p in args.cboms)
     bom = to_cbom(inv, subject=args.name or "merged")
-    return _finish(bom, args)
+    return _finish(bom, args, baseline)
 
 
 def cmd_merge(args) -> int:
@@ -156,6 +201,9 @@ def _common_out(p: argparse.ArgumentParser) -> None:
     p.add_argument("--html", help="HTML 리포트 경로")
     p.add_argument("--no-github-summary", action="store_true", help="GitHub Actions 요약 출력을 끈다")
     p.add_argument("--name", help="CBOM 메타데이터에 넣을 대상 이름")
+    p.add_argument("--baseline", metavar="CBOM",
+                   help="기준 CBOM (예: main 브랜치 스캔 결과). 주면 기준선 대비 새로 생긴 위반만 "
+                        "--fail-on 판정에 쓴다. 파일이 없거나 깨지면 종료 코드 2")
     p.add_argument("-v", "--verbose", action="store_true")
 
 

@@ -71,7 +71,7 @@ def test_cli_scan_and_merge(tmp_path, monkeypatch):
     assert "<table>" in html.read_text(encoding="utf-8")
     merged = tmp_path / "m.json"
     assert main(["merge", str(out), str(out), "-o", str(merged)]) == 0
-    assert len(json.loads(merged.read_text())["components"]) == len(bom["components"])
+    assert len(json.loads(merged.read_text(encoding="utf-8"))["components"]) == len(bom["components"])
     assert main(["check", str(merged), "--policy", "strict", "--fail-on", "warn"]) == 1
 
 

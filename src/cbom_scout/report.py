@@ -30,11 +30,53 @@ def summary_stats(bom: dict) -> dict:
             "occurrences": occ, "algorithms": len(algs), "vulnerable_algorithms": qv, "pqc_algorithms": pqc}
 
 
-def to_markdown(bom: dict, result: Result, max_locations: int = 3) -> str:
+def _locs_md(locations: list, max_locations: int) -> str:
+    locs = ", ".join(f"`{l}`" for l in locations[:max_locations])
+    if len(locations) > max_locations:
+        locs += f" 외 {len(locations) - max_locations}곳"
+    return locs
+
+
+def _entry_rows(entries: list, max_locations: int) -> list:
+    return [f"| {ACTION_ICON[e.action]} {ACTION_KO[e.action]} | **{_md(e.name)}** | "
+            f"{ASSET_KO.get(e.asset_type, e.asset_type)} | {STATUS_LABEL_KO.get(e.status, e.status)} | "
+            f"{_md(e.message)} | {_locs_md(e.locations, max_locations)} |" for e in entries]
+
+
+_TABLE_HEAD = ["| 판정 | 자산 | 유형 | 상태 | 조치 | 위치 |", "|---|---|---|---|---|---|"]
+
+
+def _baseline_sections(diff, max_locations: int) -> list:
+    lines = ["## 신규 위반 (기준선 대비)", ""] + _TABLE_HEAD
+    rows = _entry_rows(diff.new, max_locations)
+    lines += rows or ["| 🟢 | 기준선 대비 새로 생긴 위반이 없습니다 | | | | |"]
+    lines += ["", "## 기존 위반", ""]
+    if diff.existing:
+        lines += [f"<details><summary>기준선에 이미 있던 위반 {diff.existing_count}건</summary>", ""]
+        lines += _TABLE_HEAD + _entry_rows(diff.existing, max_locations)
+        lines += ["", "</details>"]
+    else:
+        lines.append("기준선에 있던 위반이 없습니다.")
+    lines += ["", f"## 해결된 위반 ({diff.resolved_count}건)", ""]
+    if diff.resolved:
+        for e in diff.resolved:
+            more = f" 외 {len(e.paths) - max_locations}곳" if len(e.paths) > max_locations else ""
+            lines.append(f"- {_md(e.name)} — " + ", ".join(f"`{p}`" for p in e.paths[:max_locations]) + more)
+    else:
+        lines.append("기준선 대비 사라진 위반이 없습니다.")
+    return lines
+
+
+def to_markdown(bom: dict, result: Result, max_locations: int = 3, diff=None) -> str:
     s = summary_stats(bom)
     lines = ["# 🔐 cbom-scout 암호자산 리포트", ""]
     worst = result.worst()
-    lines.append(f"**판정: {ACTION_ICON[worst]} {ACTION_KO[worst]}** · 정책 `{result.policy}`")
+    if diff is None:
+        lines.append(f"**판정: {ACTION_ICON[worst]} {ACTION_KO[worst]}** · 정책 `{result.policy}`")
+    else:
+        bw = diff.worst()
+        lines.append(f"**기준선 대비 판정: {ACTION_ICON[bw]} {ACTION_KO[bw]}** · "
+                     f"전체 판정 {ACTION_ICON[worst]} {ACTION_KO[worst]} · 정책 `{result.policy}`")
     lines.append("")
     lines.append("| 전체 자산 | 알고리즘 | 취약 알고리즘 | PQC·하이브리드 | 발견 위치 |")
     lines.append("|---:|---:|---:|---:|---:|")
@@ -44,6 +86,11 @@ def to_markdown(bom: dict, result: Result, max_locations: int = 3) -> str:
     c = result.counts
     lines.append(f"정책 결과: 🔴 실패 {c['fail']} · 🟠 경고 {c['warn']} · 🔵 참고 {c['info']} · 🟢 통과 {c['pass']}")
     lines.append("")
+    if diff is not None:
+        lines += _baseline_sections(diff, max_locations)
+        _passed_details(lines, result)
+        lines += ["", "> CycloneDX 1.6 CBOM 원본은 워크플로 아티팩트로 내려받을 수 있습니다."]
+        return "\n".join(lines) + "\n"
     lines.append("## 조치가 필요한 자산")
     lines.append("")
     lines.append("| 판정 | 자산 | 유형 | 상태 | 조치 | 위치 |")
@@ -63,33 +110,53 @@ def to_markdown(bom: dict, result: Result, max_locations: int = 3) -> str:
         shown += 1
     if shown == 0:
         lines.append("| 🟢 | 조치가 필요한 자산이 없습니다 | | | | |")
+    _passed_details(lines, result)
+    lines += ["", "> CycloneDX 1.6 CBOM 원본은 워크플로 아티팩트로 내려받을 수 있습니다."]
+    return "\n".join(lines) + "\n"
+
+
+def _passed_details(lines: list, result: Result) -> None:
     passed = [f for f in result.findings if f.action == "pass"]
     if passed:
         lines += ["", "<details><summary>통과한 자산 " + str(len(passed)) + "개</summary>", ""]
         lines += [f"- {_md(f.name)} ({STATUS_LABEL_KO.get(f.status, f.status)})" for f in passed]
         lines += ["", "</details>"]
-    lines += ["", "> CycloneDX 1.6 CBOM 원본은 워크플로 아티팩트로 내려받을 수 있습니다."]
-    return "\n".join(lines) + "\n"
 
 
 def _md(t: str) -> str:
     return (t or "").replace("|", "\\|").replace("\n", " ")
 
 
-def to_html(bom: dict, result: Result) -> str:
-    s = summary_stats(bom)
-    comps = {x["bom-ref"]: x for x in bom.get("components", [])}
-    rows = []
-    for f in result.findings:
-        comp = comps.get(f.ref, {})
-        locs = "<br>".join(html.escape(l) for l in f.locations[:5])
-        if len(f.locations) > 5:
-            locs += f"<br>외 {len(f.locations) - 5}곳"
-        rows.append(
-            f"<tr class='{f.action}'><td><span class='badge {f.action}'>{ACTION_KO[f.action]}</span></td>"
-            f"<td><b>{html.escape(f.name)}</b></td><td>{ASSET_KO.get(_asset_type(comp), '')}</td>"
+def _html_row(f, asset_type: str, base_cell: str = "") -> str:
+    locs = "<br>".join(html.escape(l) for l in f.locations[:5])
+    if len(f.locations) > 5:
+        locs += f"<br>외 {len(f.locations) - 5}곳"
+    return (f"<tr class='{f.action}'>{base_cell}<td><span class='badge {f.action}'>{ACTION_KO[f.action]}</span></td>"
+            f"<td><b>{html.escape(f.name)}</b></td><td>{ASSET_KO.get(asset_type, '')}</td>"
             f"<td>{html.escape(STATUS_LABEL_KO.get(f.status, f.status))}</td>"
             f"<td>{html.escape(f.message)}</td><td class='loc'>{locs}</td></tr>")
+
+
+def to_html(bom: dict, result: Result, diff=None) -> str:
+    s = summary_stats(bom)
+    comps = {x["bom-ref"]: x for x in bom.get("components", [])}
+    head = "<tr><th>판정</th><th>자산</th><th>유형</th><th>상태</th><th>조치</th><th>위치</th></tr>"
+    baseline_p = ""
+    if diff is None:
+        rows = [_html_row(f, _asset_type(comps.get(f.ref, {}))) for f in result.findings]
+    else:
+        head = head.replace("<tr>", "<tr><th>기준선</th>", 1)
+        rows = [_html_row(e, e.asset_type, "<td><span class='badge new'>신규</span></td>") for e in diff.new]
+        rows += [_html_row(e, e.asset_type, "<td><span class='badge old'>기존</span></td>") for e in diff.existing]
+        for e in diff.resolved:
+            paths = "<br>".join(html.escape(p) for p in e.paths[:5])
+            rows.append(f"<tr class='pass'><td><span class='badge resolved'>해결</span></td><td></td>"
+                        f"<td><b>{html.escape(e.name)}</b></td><td>{ASSET_KO.get(e.asset_type, '')}</td><td></td>"
+                        f"<td>기준선 대비 사라짐</td><td class='loc'>{paths}</td></tr>")
+        bw = diff.worst()
+        nc = diff.new_counts()
+        baseline_p = (f"<p>기준선 대비 판정: <b>{ACTION_KO[bw]}</b> · 신규 실패 {nc['fail']} / 신규 경고 {nc['warn']} / "
+                      f"신규 참고 {nc['info']} · 기존 {diff.existing_count}건 · 해결 {diff.resolved_count}건</p>")
     c = result.counts
     worst = result.worst()
     return f"""<!DOCTYPE html>
@@ -111,9 +178,11 @@ td.loc{{font-family:monospace;font-size:12px;color:#5b6779}}
 .badge{{padding:3px 10px;border-radius:999px;font-weight:700;font-size:12px}}
 .badge.fail{{background:#C0392B;color:#fff}} .badge.warn{{background:var(--o);color:var(--ink)}}
 .badge.info{{background:#DCE8F7;color:var(--ink)}} .badge.pass{{background:#D7F0E1;color:var(--ink)}}
+.badge.new{{background:#7B2CBF;color:#fff}} .badge.old{{background:#E4E7EB;color:var(--ink)}}
+.badge.resolved{{background:#D7F0E1;color:var(--ink)}}
 </style></head><body>
 <header><h1>🔐 cbom-scout 암호자산 리포트</h1>
-<p>판정: <b>{ACTION_KO[worst]}</b> · 정책 {html.escape(result.policy)} · 실패 {c['fail']} / 경고 {c['warn']} / 참고 {c['info']} / 통과 {c['pass']}</p></header>
+<p>판정: <b>{ACTION_KO[worst]}</b> · 정책 {html.escape(result.policy)} · 실패 {c['fail']} / 경고 {c['warn']} / 참고 {c['info']} / 통과 {c['pass']}</p>{baseline_p}</header>
 <main>
 <div class="kpis">
 <div class="kpi"><b>{s['total']}</b><span>전체 암호 자산</span></div>
@@ -122,7 +191,7 @@ td.loc{{font-family:monospace;font-size:12px;color:#5b6779}}
 <div class="kpi"><b>{s['pqc_algorithms']}</b><span>PQC·하이브리드</span></div>
 <div class="kpi"><b>{s['occurrences']}</b><span>발견 위치</span></div>
 </div>
-<table><tr><th>판정</th><th>자산</th><th>유형</th><th>상태</th><th>조치</th><th>위치</th></tr>
+<table>{head}
 {''.join(rows)}
 </table></main></body></html>
 """
