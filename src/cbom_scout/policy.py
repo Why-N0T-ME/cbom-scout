@@ -37,11 +37,16 @@ class Result:
     counts: dict
 
     def worst(self) -> str:
-        worst = "pass"
-        for f in self.findings:
-            if ACTIONS.index(f.action) > ACTIONS.index(worst):
-                worst = f.action
-        return worst
+        return worst_of(f.action for f in self.findings)
+
+
+def worst_of(actions) -> str:
+    """조치 목록 중 가장 높은 것. 비어 있으면 pass."""
+    worst = "pass"
+    for a in actions:
+        if ACTIONS.index(a) > ACTIONS.index(worst):
+            worst = a
+    return worst
 
 
 def load_policy(path: Optional[str] = None) -> dict:
@@ -97,6 +102,11 @@ def evaluate(bom: dict, policy: dict, today: Optional[dt.date] = None) -> Result
 
 
 def should_fail(result: Result, fail_on: str) -> bool:
+    return fails_at(result.worst(), fail_on)
+
+
+def fails_at(action: str, fail_on: str) -> bool:
+    """action 이 --fail-on 수준 이상인지. 기준선 비교에서는 신규 위반의 최고 조치에 쓴다."""
     if fail_on == "never":
         return False
-    return ACTIONS.index(result.worst()) >= ACTIONS.index(fail_on)
+    return ACTIONS.index(action) >= ACTIONS.index(fail_on)

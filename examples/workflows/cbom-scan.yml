@@ -12,12 +12,27 @@ on:
 
 permissions:
   contents: read
+  actions: read   # PR 에서 main 의 기준선 아티팩트를 내려받기 위해
 
 jobs:
   cbom:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      # PR 에서는 main 에서 만든 CBOM 을 기준선으로 써서, 새로 생긴 취약 암호만 실패로 처리한다.
+      # 아직 기준선이 없으면(첫 도입) 이 단계가 실패해도 넘어가고, 전체 평가로 돈다.
+      - name: Download baseline CBOM
+        if: github.event_name == 'pull_request'
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          run_id=$(gh run list --branch main --workflow "${{ github.workflow }}" --status success \
+                     --limit 1 --json databaseId --jq '.[0].databaseId')
+          if [ -n "$run_id" ]; then
+            gh run download "$run_id" --name cbom --dir baseline && mv baseline/cbom.json baseline.json
+          fi
 
       - name: Scan cryptography
         uses: OWNER/cbom-scout@v0.1.0
@@ -29,3 +44,5 @@ jobs:
             www.example.com:443
           policy: nist-ir8547   # 신규 서비스는 strict 권장
           fail-on: fail         # broken 은 즉시 차단, 양자 취약은 2031년부터 차단
+          # 기준선 파일이 있을 때만 넘긴다 (지정했는데 파일이 없으면 종료 코드 2)
+          baseline: ${{ hashFiles('baseline.json') != '' && 'baseline.json' || '' }}
