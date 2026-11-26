@@ -1,5 +1,5 @@
 {
- "_comment": "평가 말뭉치 정답 라벨. file 은 files/ 기준 '/' 경로. 닫힌 세계 채점: 양성 라벨과 맞지 않는 탐지는 모두 오탐. reviewed 는 사람이 라벨을 확인했는지 — 모든 라벨이 true 여야 평가 도구가 지표를 낸다.",
+ "_comment": "평가 말뭉치 정답 라벨. file 은 files/ 기준 '/' 경로. 닫힌 세계 채점: 양성 라벨과 맞지 않는 탐지는 모두 오탐. reviewed 는 사람이 라벨을 확인했는지 — 미검수 라벨도 채점하고 결과에 검수·미검수 수를 함께 적는다. 정답 기준: 그 코드가 실제로 그 암호를 쓰는가 (엔진이 잡을 수 있는지는 기준이 아님).",
  "labels": [
   {
    "file": "python/direct.py",
@@ -179,7 +179,7 @@
    "category": "comment",
    "phase": "1",
    "source": "handwritten",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "file": "python/comments.py",
@@ -189,7 +189,7 @@
    "category": "comment",
    "phase": "1",
    "source": "handwritten",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "file": "python/comments.py",
@@ -199,7 +199,7 @@
    "category": "comment",
    "phase": "1",
    "source": "handwritten",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "file": "python/comments.py",
@@ -219,7 +219,7 @@
    "category": "docstring",
    "phase": "1",
    "source": "handwritten",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "file": "python/docstrings.py",
@@ -229,7 +229,7 @@
    "category": "docstring",
    "phase": "1",
    "source": "handwritten",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "file": "python/docstrings.py",
@@ -239,7 +239,7 @@
    "category": "docstring",
    "phase": "1",
    "source": "handwritten",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "file": "python/docstrings.py",
@@ -249,7 +249,7 @@
    "category": "docstring",
    "phase": "1",
    "source": "handwritten",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "file": "python/docstrings.py",
@@ -259,7 +259,7 @@
    "category": "docstring",
    "phase": "1",
    "source": "handwritten",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "file": "python/docstrings.py",
@@ -269,7 +269,7 @@
    "category": "docstring",
    "phase": "1",
    "source": "handwritten",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "file": "python/strings.py",
@@ -279,7 +279,7 @@
    "category": "string-literal",
    "phase": "1",
    "source": "handwritten",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "file": "python/strings.py",
@@ -289,7 +289,7 @@
    "category": "string-literal",
    "phase": "1",
    "source": "handwritten",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "file": "python/strings.py",
@@ -299,7 +299,7 @@
    "category": "string-literal",
    "phase": "1",
    "source": "handwritten",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "file": "python/strings.py",
@@ -309,17 +309,17 @@
    "category": "string-literal",
    "phase": "1",
    "source": "handwritten",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "file": "python/strings.py",
    "line": 9,
    "name": "ML-KEM-768",
-   "label": "positive",
+   "label": "negative",
    "category": "pqc-string",
    "phase": "1",
    "source": "handwritten",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "file": "python/lookalike.py",
@@ -329,17 +329,17 @@
    "category": "lookalike",
    "phase": "1",
    "source": "handwritten",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "file": "python/lookalike.py",
    "line": 5,
    "name": "MD5",
-   "label": "negative",
-   "category": "lookalike",
+   "label": "positive",
+   "category": "external-program",
    "phase": "1",
    "source": "handwritten",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "file": "python/lookalike.py",
@@ -349,7 +349,7 @@
    "category": "lookalike",
    "phase": "1",
    "source": "handwritten",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "file": "python/lookalike.py",
@@ -359,7 +359,7 @@
    "category": "lookalike",
    "phase": "1",
    "source": "handwritten",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "file": "python/lookalike.py",
@@ -369,7 +369,7 @@
    "category": "lookalike",
    "phase": "1",
    "source": "handwritten",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "file": "python/alias.py",
@@ -479,7 +479,7 @@
    "category": "indirect-const",
    "phase": "1",
    "source": "handwritten",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "file": "python/indirect_const.py",
@@ -489,7 +489,7 @@
    "category": "indirect-const",
    "phase": "1",
    "source": "handwritten",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "file": "python/indirect_const.py",
@@ -499,7 +499,7 @@
    "category": "indirect-const",
    "phase": "1",
    "source": "handwritten",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "file": "python/indirect_const.py",
@@ -509,7 +509,7 @@
    "category": "indirect-const",
    "phase": "1",
    "source": "handwritten",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "file": "python/indirect_const.py",
@@ -519,7 +519,7 @@
    "category": "indirect-const",
    "phase": "1",
    "source": "handwritten",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "file": "python/indirect_const.py",
@@ -529,7 +529,7 @@
    "category": "indirect-const",
    "phase": "1",
    "source": "handwritten",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "file": "python/indirect_const.py",
@@ -539,7 +539,7 @@
    "category": "indirect-const",
    "phase": "1",
    "source": "handwritten",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "file": "python/indirect_const.py",
@@ -549,7 +549,7 @@
    "category": "indirect-const",
    "phase": "1",
    "source": "handwritten",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "file": "python/indirect_default.py",
@@ -559,7 +559,7 @@
    "category": "indirect-default",
    "phase": "1",
    "source": "handwritten",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "file": "python/indirect_default.py",
@@ -569,7 +569,7 @@
    "category": "indirect-default",
    "phase": "1",
    "source": "handwritten",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "file": "python/indirect_default.py",
@@ -579,7 +579,7 @@
    "category": "indirect-default",
    "phase": "1",
    "source": "handwritten",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "file": "python/tests/test_crypto.py",
@@ -611,7 +611,7 @@
    "category": "cross-function",
    "phase": "later",
    "source": "handwritten",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "file": "python/pkg/cross_function.py",
@@ -621,7 +621,7 @@
    "category": "cross-function",
    "phase": "later",
    "source": "handwritten",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "file": "python/pkg/cross_function.py",
@@ -631,7 +631,7 @@
    "category": "cross-function",
    "phase": "later",
    "source": "handwritten",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "file": "python/pkg/cross_function.py",
@@ -641,17 +641,17 @@
    "category": "cross-function",
    "phase": "later",
    "source": "handwritten",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "file": "python/pkg/cross_function.py",
-   "line": 31,
+   "line": 32,
    "name": "SHA-1",
    "label": "positive",
    "category": "cross-function",
    "phase": "later",
    "source": "handwritten",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "file": "java/Crypto.java",
@@ -661,7 +661,7 @@
    "category": "comment",
    "phase": "1",
    "source": "handwritten",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "file": "java/Crypto.java",
@@ -671,7 +671,7 @@
    "category": "comment",
    "phase": "1",
    "source": "handwritten",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "file": "java/Crypto.java",
@@ -681,7 +681,7 @@
    "category": "comment",
    "phase": "1",
    "source": "handwritten",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "file": "java/Crypto.java",
@@ -691,7 +691,7 @@
    "category": "comment",
    "phase": "1",
    "source": "handwritten",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "file": "java/Crypto.java",
@@ -701,7 +701,7 @@
    "category": "comment",
    "phase": "1",
    "source": "handwritten",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "file": "java/Crypto.java",
@@ -711,7 +711,7 @@
    "category": "comment",
    "phase": "1",
    "source": "handwritten",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "file": "java/Crypto.java",
@@ -721,7 +721,7 @@
    "category": "string-literal",
    "phase": "1",
    "source": "handwritten",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "file": "java/Crypto.java",
@@ -731,7 +731,7 @@
    "category": "string-literal",
    "phase": "1",
    "source": "handwritten",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "file": "java/Crypto.java",
@@ -741,7 +741,7 @@
    "category": "lookalike",
    "phase": "1",
    "source": "handwritten",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "file": "java/Crypto.java",
@@ -751,7 +751,7 @@
    "category": "lookalike",
    "phase": "1",
    "source": "handwritten",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "file": "java/Crypto.java",
@@ -817,11 +817,11 @@
    "file": "java/Crypto.java",
    "line": 28,
    "name": "ML-KEM-1024",
-   "label": "positive",
+   "label": "negative",
    "category": "pqc-string",
    "phase": "1",
    "source": "handwritten",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "file": "java/Crypto.java",
@@ -872,7 +872,7 @@
    "category": "comment",
    "phase": "1",
    "source": "handwritten",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "file": "go/main.go",
@@ -882,7 +882,7 @@
    "category": "string-literal",
    "phase": "1",
    "source": "handwritten",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "file": "go/main.go",
@@ -892,7 +892,7 @@
    "category": "string-literal",
    "phase": "1",
    "source": "handwritten",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "file": "go/main.go",
@@ -902,7 +902,7 @@
    "category": "lookalike",
    "phase": "1",
    "source": "handwritten",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "file": "go/main.go",
@@ -983,7 +983,7 @@
    "category": "comment",
    "phase": "1",
    "source": "handwritten",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "file": "js/crypto.ts",
@@ -993,7 +993,7 @@
    "category": "comment",
    "phase": "1",
    "source": "handwritten",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "file": "js/crypto.ts",
@@ -1003,7 +1003,7 @@
    "category": "string-literal",
    "phase": "1",
    "source": "handwritten",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "file": "js/crypto.ts",
@@ -1013,7 +1013,7 @@
    "category": "string-literal",
    "phase": "1",
    "source": "handwritten",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "file": "js/crypto.ts",
@@ -1023,7 +1023,7 @@
    "category": "lookalike",
    "phase": "1",
    "source": "handwritten",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "file": "js/crypto.ts",
@@ -1104,7 +1104,7 @@
    "category": "comment",
    "phase": "1",
    "source": "handwritten",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "file": "c/crypto.c",
@@ -1114,7 +1114,7 @@
    "category": "comment",
    "phase": "1",
    "source": "handwritten",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "file": "c/crypto.c",
@@ -1124,7 +1124,7 @@
    "category": "string-literal",
    "phase": "1",
    "source": "handwritten",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "file": "c/crypto.c",
@@ -1134,7 +1134,7 @@
    "category": "lookalike",
    "phase": "1",
    "source": "handwritten",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "file": "c/crypto.c",
@@ -1179,12 +1179,12 @@
   {
    "file": "c/crypto.c",
    "line": 14,
-   "name": "RSA",
+   "name": "RSA-2048",
    "label": "positive",
    "category": "direct",
    "phase": "1",
    "source": "handwritten",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "file": "csharp/Crypto.cs",
@@ -1194,7 +1194,7 @@
    "category": "comment",
    "phase": "1",
    "source": "handwritten",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "file": "csharp/Crypto.cs",
@@ -1204,7 +1204,7 @@
    "category": "comment",
    "phase": "1",
    "source": "handwritten",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "file": "csharp/Crypto.cs",
@@ -1214,7 +1214,7 @@
    "category": "string-literal",
    "phase": "1",
    "source": "handwritten",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "file": "csharp/Crypto.cs",
@@ -1224,7 +1224,7 @@
    "category": "string-literal",
    "phase": "1",
    "source": "handwritten",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "file": "csharp/Crypto.cs",
@@ -1234,7 +1234,7 @@
    "category": "lookalike",
    "phase": "1",
    "source": "handwritten",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "file": "csharp/Crypto.cs",
@@ -1304,7 +1304,7 @@
    "category": "comment",
    "phase": "1",
    "source": "handwritten",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "file": "config/sshd_config",
@@ -1314,7 +1314,7 @@
    "category": "comment",
    "phase": "1",
    "source": "handwritten",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "file": "config/sshd_config",
@@ -1354,7 +1354,7 @@
    "category": "comment",
    "phase": "1",
    "source": "handwritten",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "file": "config/nginx.conf",
@@ -1372,6 +1372,46 @@
    "name": "ECDH-P-384",
    "label": "positive",
    "category": "direct",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "python/non_security.py",
+   "line": 5,
+   "name": "MD5",
+   "label": "positive",
+   "category": "non-security",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "python/non_security.py",
+   "line": 9,
+   "name": "MD5",
+   "label": "positive",
+   "category": "non-security",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "python/non_security.py",
+   "line": 12,
+   "name": "AES",
+   "label": "negative",
+   "category": "lookalike",
+   "phase": "1",
+   "source": "handwritten",
+   "reviewed": false
+  },
+  {
+   "file": "python/non_security.py",
+   "line": 13,
+   "name": "DES",
+   "label": "negative",
+   "category": "lookalike",
    "phase": "1",
    "source": "handwritten",
    "reviewed": false

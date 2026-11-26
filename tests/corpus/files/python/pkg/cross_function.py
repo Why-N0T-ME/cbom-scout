@@ -28,4 +28,5 @@ def use():
     make_hash("sha1", b"")
     make_key(1024)
     wrap(public_exponent=65537, key_size=1024)
+    Signer().digest(b"")
     return hashlib.new(LEGACY_HASH, b"")
