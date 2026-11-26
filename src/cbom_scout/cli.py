@@ -193,7 +193,24 @@ def build_parser() -> argparse.ArgumentParser:
     return ap
 
 
+def _utf8_console() -> None:
+    """한국어 출력이 깨지거나 UnicodeEncodeError 로 죽지 않게 표준 출력을 UTF-8 로 맞춘다.
+
+    Windows 에서 파이프·리디렉션(Git Bash, CI 로그, `> out.txt`)으로 출력하면 기본 인코딩이
+    cp1252 같은 ANSI 코드 페이지라 한글을 쓸 수 없다. 이미 UTF-8 이면 건드리지 않는다.
+    """
+    for stream in (sys.stdout, sys.stderr):
+        enc = (getattr(stream, "encoding", None) or "").lower().replace("-", "").replace("_", "")
+        if enc == "utf8" or not hasattr(stream, "reconfigure"):
+            continue
+        try:
+            stream.reconfigure(encoding="utf-8", errors="replace")
+        except (ValueError, OSError):
+            pass
+
+
 def main(argv: Optional[list] = None) -> int:
+    _utf8_console()
     args = build_parser().parse_args(argv)
     return args.func(args)
 
