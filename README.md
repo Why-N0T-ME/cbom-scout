@@ -179,6 +179,21 @@ src/cbom_scout/
 - [ ] SARIF 출력 → GitHub Code Scanning 연동
 - [ ] KCMVP 검증 모듈 목록과 대조
 
+## Claude Code 에이전트 파이프라인
+
+이 저장소는 Claude Code 로 기능을 개발할 때 역할을 나눠 서로 검증하도록 설정돼 있습니다.
+
+| 역할 | 정의 | 수정 가능 경로 |
+|---|---|---|
+| PM — 명세·완료 기준 | `.claude/agents/pm.md` | `docs/specs/` |
+| 개발 — 구현 | 메인 세션 (`CLAUDE.md`) | 제한 없음 |
+| 테스터 — 독립 검증 | `.claude/agents/tester.md` | `tests/`, `docs/test-reports/` |
+| 보고 — 최종 보고서 | `.claude/agents/reporter.md` | `docs/reports/` |
+
+역할별 수정 가능 경로는 훅(`.claude/hooks/guard_paths.py`)이 강제합니다. 흐름과 관문은 [docs/pipeline.md](docs/pipeline.md).
+저장소 폴더에서 `claude` 를 실행하고 "기준선 비교 기능을 파이프라인으로 진행해줘"처럼 요청하면 됩니다.
+처음 열 때 폴더를 신뢰(trust)해야 훅이 동작하며, 훅은 `python` 명령을 씁니다.
+
 ## 릴리스 만들기 (관리자용)
 
 1. `docs/releases/vX.Y.Z.md` 에 릴리스 설명을 쓰고 커밋합니다.
