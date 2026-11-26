@@ -37,16 +37,14 @@ class Inventory:
         self.dependencies: dict[str, set] = {}
 
     # ------------------------------------------------------------ 공통
-    def _occ(self, comp: dict, location: Optional[str], line: Optional[int],
-             context: Optional[str]) -> None:
+    def _occ(self, comp: dict, location: Optional[str], line: Optional[int]) -> None:
+        # 소스 줄 원문(additionalContext)은 기록하지 않는다 — 같은 줄의 하드코딩 키가 CBOM 에 새기 때문.
         if not location:
             return
         occs = comp.setdefault("evidence", {}).setdefault("occurrences", [])
         occ = {"location": location}
         if line:
             occ["line"] = int(line)
-        if context:
-            occ["additionalContext"] = context[:200]
         if occ not in occs:
             occs.append(occ)
 
@@ -55,7 +53,7 @@ class Inventory:
 
     # ------------------------------------------------------------ 알고리즘
     def add_algorithm(self, c: Classified, *, location: str | None = None, line: int | None = None,
-                      context: str | None = None, function: str | None = None,
+                      function: str | None = None,
                       scanner: str = "") -> str:
         ref = f"crypto/algorithm/{_slug(c.key)}"
         comp = self.components.get(ref)
@@ -88,7 +86,7 @@ class Inventory:
             scanners = set((get_prop(comp, "scanners") or "").split(",")) - {""}
             scanners.add(scanner)
             set_prop(comp, "scanners", ",".join(sorted(scanners)))
-        self._occ(comp, location, line, context)
+        self._occ(comp, location, line)
         return ref
 
     def add_algorithm_by_name(self, name: str, **kw) -> str:
@@ -124,7 +122,7 @@ class Inventory:
         for r in (sig_ref, key_ref):
             if r:
                 self._depend(ref, r)
-        self._occ(comp, location, None, None)
+        self._occ(comp, location, None)
         return ref
 
     # ------------------------------------------------------------ 키 자료
@@ -154,7 +152,7 @@ class Inventory:
             self.components[ref] = comp
         if alg_ref:
             self._depend(ref, alg_ref)
-        self._occ(comp, location, line, None)
+        self._occ(comp, location, line)
         return ref
 
     # ------------------------------------------------------------ 프로토콜
@@ -179,7 +177,7 @@ class Inventory:
         set_prop(comp, "scanners", scanner)
         for k, v in (extra or {}).items():
             set_prop(comp, k, str(v))
-        self._occ(comp, endpoint, None, None)
+        self._occ(comp, endpoint, None)
         self.components[ref] = comp
         for r in alg_refs:
             self._depend(ref, r)

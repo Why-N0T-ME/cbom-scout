@@ -463,7 +463,7 @@ def scan_code(root: str, inv: Inventory, rel_to: str | None = None, excludes: It
                         if key in seen:
                             continue
                         seen.add(key)
-                        _record(inv, hit, rel, idx + 1, line.strip())
+                        _record(inv, hit, rel, idx + 1)
                         count += 1
             if ext in CFG or ext == "":
                 tm = TLS_PROTOCOLS_RE.search(line)
@@ -485,16 +485,16 @@ def scan_code(root: str, inv: Inventory, rel_to: str | None = None, excludes: It
     return count
 
 
-def _record(inv: Inventory, hit: Hit, rel: str, line: int, ctx: str) -> None:
+def _record(inv: Inventory, hit: Hit, rel: str, line: int) -> None:
     name = hit.name
     if name == "sntrup761x25519":
         from ..catalog import Classified, HYBRID
         c = Classified("sntrup761x25519", "sntrup761x25519", "kem", HYBRID, 1,
                        note="NTRU Prime + X25519 하이브리드 (NIST 표준은 아님, mlkem768x25519 권장)")
-        inv.add_algorithm(c, location=rel, line=line, context=ctx, function="keyderive", scanner="code")
+        inv.add_algorithm(c, location=rel, line=line, function="keyderive", scanner="code")
         return
     curve = hit.curve
     if name.upper() in ("EC",) and curve:
         name = "EC"
     inv.add_algorithm_by_name(name, size=hit.size, curve=curve, mode=hit.mode, location=rel, line=line,
-                              context=ctx, function=hit.function, scanner="code")
+                              function=hit.function, scanner="code")
