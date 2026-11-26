@@ -13,6 +13,7 @@ status 값
   symmetric-ok        양자 환경에서도 충분한 대칭키·해시 (AES-256, SHA-384 등)
   symmetric-weak      당장은 허용되나 양자 여유가 작은 대칭키·해시 (AES-128, SHA-256 등)
   unknown             판정 불가
+  ok                  설정이 기준을 충족 (예: TLS 1.2 미만 차단 + TLS 1.3 허용)
 """
 from __future__ import annotations
 
@@ -27,6 +28,7 @@ PQC_DRAFT = "pqc-draft"
 SYM_OK = "symmetric-ok"
 SYM_WEAK = "symmetric-weak"
 UNKNOWN = "unknown"
+OK = "ok"
 
 STATUS_LABEL_KO = {
     BROKEN: "즉시 교체 (취약)",
@@ -37,6 +39,7 @@ STATUS_LABEL_KO = {
     SYM_OK: "대칭키·해시 충분",
     SYM_WEAK: "대칭키·해시 상향 권장",
     UNKNOWN: "판정 불가",
+    OK: "기준 충족",
 }
 
 
@@ -218,4 +221,4 @@ def classify(name: str, size: Optional[int] = None, curve: Optional[str] = None,
                       mode=mode.upper() if mode else None, oid=info.oid, note=note)
 
 
-STATUS_ORDER = [BROKEN, QV, SYM_WEAK, UNKNOWN, PQC_DRAFT, HYBRID, SYM_OK, PQC]
+STATUS_ORDER = [BROKEN, QV, SYM_WEAK, UNKNOWN, PQC_DRAFT, HYBRID, SYM_OK, OK, PQC]

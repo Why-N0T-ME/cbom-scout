@@ -7,6 +7,7 @@
 """
 from __future__ import annotations
 
+import fnmatch
 import os
 import re
 from dataclasses import dataclass
@@ -25,7 +26,7 @@ LANG_EXT = {
     "js": {".js", ".mjs", ".cjs", ".jsx", ".ts", ".tsx"},
     "c": {".c", ".h", ".cc", ".cpp", ".cxx", ".hpp", ".hh"},
     "csharp": {".cs"},
-    "config": {".conf", ".cfg", ".ini", ".yaml", ".yml", ".toml", ".properties", ".xml", ".json"},
+    "config": {".conf", ".cfg", ".cnf", ".ini", ".yaml", ".yml", ".toml", ".properties", ".xml"},
 }
 CONFIG_NAMES = {"sshd_config", "ssh_config", "nginx.conf", "httpd.conf", "ssl.conf", "openssl.cnf"}
 ALL_CODE = set().union(*[v for k, v in LANG_EXT.items() if k != "config"])
@@ -184,6 +185,17 @@ def _java_keypair(m, lines, idx):
                 size=int(size) if size else None, curve=curve)]
 
 
+def _java_cipher(m, lines, idx):
+    spec = m.group("spec")
+    hits = parse_cipher_spec(spec)
+    # JCA 는 "AES" 처럼 모드를 생략하면 기본값 ECB/PKCS5Padding 을 쓴다
+    if "/" not in spec:
+        for h in hits:
+            if h.name in ("AES", "DES", "3DES", "ARIA", "SEED", "LEA", "Blowfish") and not h.mode:
+                h.mode = "ecb"
+    return hits
+
+
 def _js_keypair(m, lines, idx):
     alg = m.group("alg")
     size = _lookahead(lines, idx, r"modulusLength\s*:\s*(\d{3,5})")
@@ -267,7 +279,7 @@ rule(PY, r"\b(?P<alg>DES3|DES|ARC4|Blowfish|AES)\.new\([^)]*?(?:MODE_(?P<mode>[A
 
 # ---- Java / Kotlin (JCA) --------------------------------------------------------
 rule(JAVA, r"KeyPairGenerator\.getInstance\(\s*\"(?P<alg>[\w-]+)\"", _java_keypair)
-rule(JAVA, r"Cipher\.getInstance\(\s*\"(?P<spec>[^\"]+)\"", lambda m, l, i: parse_cipher_spec(m.group("spec")))
+rule(JAVA, r"Cipher\.getInstance\(\s*\"(?P<spec>[^\"]+)\"", _java_cipher)
 rule(JAVA, r"MessageDigest\.getInstance\(\s*\"(?P<alg>[\w-]+)\"", _group("digest"))
 rule(JAVA, r"Signature\.getInstance\(\s*\"(?P<spec>[\w-]+)\"", lambda m, l, i: parse_sig_spec(m.group("spec")))
 rule(JAVA, r"KeyAgreement\.getInstance\(\s*\"(?P<alg>[\w-]+)\"", _group("keyderive"))
@@ -317,15 +329,39 @@ rule(ALL_CODE, PQC_STR, lambda m, l, i: [Hit(pqc_name(m.group("alg")), None)])
 
 # ---- 설정 파일 --------------------------------------------------------------------
 rule(CFG | {""}, r"^\s*(?:KexAlgorithms|HostKeyAlgorithms|PubkeyAcceptedAlgorithms|PubkeyAcceptedKeyTypes)\s+(?P<list>\S+)", _ssh_list)
-rule(CFG | {""}, r"ssl_ecdh_curve\s+(?P<list>[^;]+);",
-     lambda m, l, i: [Hit(c, "keyderive") if c in ("X25519", "X25519MLKEM768") else Hit("ECDH", "keyderive", curve=c)
-                      for c in re.split(r"[:\s]+", m.group("list").strip()) if c])
-rule(CFG | {""}, r"(?i)\bGroups\s*=?\s*(?P<list>[\w:]+)",
-     lambda m, l, i: [Hit(c, "keyderive") if c.lower().startswith(("x25519", "secp256r1mlkem", "secp384r1mlkem", "x448"))
-                      else Hit("ECDH", "keyderive", curve=c) for c in m.group("list").split(":") if c])
+rule(CFG | {""}, r"^\s*ssl_ecdh_curve\s+(?P<list>[^;]+);", lambda m, l, i: _tls_groups(m.group("list")))
+rule({".cnf", ".conf", ""}, r"(?i)^\s*(?:Groups|Curves)\s*=\s*(?P<list>[\w:-]+)\s*$",
+     lambda m, l, i: _tls_groups(m.group("list")))
 
 # ---- 저장소 안의 비밀키 (모든 텍스트 파일) -----------------------------------------
 PRIVATE_KEY_RE = re.compile(r"-----BEGIN (?P<kind>RSA |EC |DSA |OPENSSH |ENCRYPTED )?PRIVATE KEY-----")
+
+
+KNOWN_GROUPS = {
+    "x25519": ("X25519", None), "x448": ("X448", None),
+    "x25519mlkem768": ("X25519MLKEM768", None), "secp256r1mlkem768": ("SecP256r1MLKEM768", None),
+    "secp384r1mlkem1024": ("SecP384r1MLKEM1024", None),
+    "mlkem512": ("ML-KEM-512", None), "mlkem768": ("ML-KEM-768", None), "mlkem1024": ("ML-KEM-1024", None),
+    "prime256v1": ("ECDH", "P-256"), "secp256r1": ("ECDH", "P-256"), "p-256": ("ECDH", "P-256"),
+    "secp384r1": ("ECDH", "P-384"), "p-384": ("ECDH", "P-384"),
+    "secp521r1": ("ECDH", "P-521"), "p-521": ("ECDH", "P-521"),
+    "ffdhe2048": ("DH", 2048), "ffdhe3072": ("DH", 3072), "ffdhe4096": ("DH", 4096),
+}
+
+
+def _tls_groups(raw: str) -> list:
+    """TLS 키 교환 그룹 목록. 알려진 그룹 이름만 인정해 오탐을 막는다."""
+    hits = []
+    for tok in re.split(r"[:\s,]+", raw.strip()):
+        g = KNOWN_GROUPS.get(tok.lower())
+        if not g:
+            continue
+        alg, extra = g
+        if isinstance(extra, int):
+            hits.append(Hit(alg, "keyderive", size=extra))
+        else:
+            hits.append(Hit(alg, "keyderive", curve=extra))
+    return hits
 
 
 # ---- TLS 버전 설정 (nginx ssl_protocols, Apache SSLProtocol) ------------------------
@@ -345,21 +381,48 @@ def _record_tls_config(inv: Inventory, raw: str, rel: str, line: int) -> None:
     elif not has13:
         status, note = "quantum-vulnerable", "TLS 1.3 미허용 — PQC 하이브리드 키 교환은 TLS 1.3에서만 가능"
     else:
-        status, note = "", "TLS 1.3 허용 (하이브리드 그룹 설정은 별도 확인)"
+        status, note = "ok", "TLS 1.2 미만 차단, TLS 1.3 허용 (하이브리드 그룹 설정은 별도 확인)"
     versions = " ".join(enabled)
     inv.add_protocol(ptype="tls", version=versions, endpoint=f"{rel}:{line}", suites=[], alg_refs=[],
                      status=status, note=note, scanner="code")
 
 
 # ------------------------------------------------------------------ 실행
-def iter_files(root: str, include_tests: bool = True) -> Iterator[str]:
+def is_excluded(rel: str, patterns: Iterable[str]) -> bool:
+    """rel(슬래시 구분 상대경로)이 제외 패턴에 걸리는지. 'tests/', '*.min.js', 'docs/**' 형태 지원."""
+    rel = rel.lstrip("./")
+    for pat in patterns or ():
+        pat = pat.strip()
+        if not pat or pat.startswith("#"):
+            continue
+        p = pat.lstrip("/")
+        if p.endswith("/"):
+            p = p + "**"
+        if fnmatch.fnmatch(rel, p) or fnmatch.fnmatch(rel, p.rstrip("*").rstrip("/") + "/*"):
+            return True
+        if "/" not in p and any(fnmatch.fnmatch(part, p) for part in rel.split("/")):
+            return True
+    return False
+
+
+def iter_files(root: str, excludes: Iterable[str] = (), rel_to: str | None = None) -> Iterator[str]:
     if os.path.isfile(root):
         yield root
         return
+    rel_to = rel_to or root
     for d, dirs, files in os.walk(root):
-        dirs[:] = sorted(x for x in dirs if x not in SKIP_DIRS and not x.startswith(".git"))
+        keep = []
+        for x in sorted(dirs):
+            if x in SKIP_DIRS or x.startswith(".git"):
+                continue
+            if is_excluded(os.path.relpath(os.path.join(d, x), rel_to).replace(os.sep, "/") + "/", excludes):
+                continue
+            keep.append(x)
+        dirs[:] = keep
         for f in sorted(files):
-            yield os.path.join(d, f)
+            path = os.path.join(d, f)
+            if not is_excluded(os.path.relpath(path, rel_to).replace(os.sep, "/"), excludes):
+                yield path
 
 
 def _ext_of(path: str) -> str:
@@ -369,11 +432,11 @@ def _ext_of(path: str) -> str:
     return os.path.splitext(base)[1].lower()
 
 
-def scan_code(root: str, inv: Inventory, rel_to: str | None = None) -> int:
+def scan_code(root: str, inv: Inventory, rel_to: str | None = None, excludes: Iterable[str] = ()) -> int:
     """root 아래 파일을 스캔해 inv 에 추가. 반환: 찾은 (파일, 줄, 알고리즘) 수."""
     rel_to = rel_to or (root if os.path.isdir(root) else os.path.dirname(root))
     count = 0
-    for path in iter_files(root):
+    for path in iter_files(root, excludes, rel_to):
         ext = _ext_of(path)
         base = os.path.basename(path)
         relevant = [r for r in RULES if ext in r[0] or (ext == "" and base in CONFIG_NAMES and "" in r[0])]

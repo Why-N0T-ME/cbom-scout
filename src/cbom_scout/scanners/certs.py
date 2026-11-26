@@ -15,7 +15,7 @@ from cryptography.hazmat.primitives.asymmetric import dh, dsa, ec, ed448, ed2551
 
 from ..catalog import BROKEN, classify
 from ..inventory import Inventory
-from .code import SKIP_DIRS
+from .code import iter_files
 
 CERT_EXT = {".pem", ".crt", ".cer", ".der", ".key", ".pub", ".cert"}
 EXPIRY_WARN_DAYS = 30
@@ -182,20 +182,14 @@ def scan_file(path: str, rel: str, inv: Inventory) -> int:
     return found
 
 
-def scan_certs(root: str, inv: Inventory, rel_to: str | None = None) -> int:
+def scan_certs(root: str, inv: Inventory, rel_to: str | None = None, excludes=()) -> int:
     rel_to = rel_to or (root if os.path.isdir(root) else os.path.dirname(root))
     total = 0
-    paths = [root] if os.path.isfile(root) else None
-    if paths is None:
-        paths = []
-        for d, dirs, files in os.walk(root):
-            dirs[:] = sorted(x for x in dirs if x not in SKIP_DIRS)
-            for f in sorted(files):
-                if os.path.splitext(f)[1].lower() in CERT_EXT or f in ("authorized_keys", "known_hosts") \
-                        or f.startswith("id_") and f.endswith(".pub"):
-                    paths.append(os.path.join(d, f))
-    for p in paths:
-        total += scan_file(p, os.path.relpath(p, rel_to).replace(os.sep, "/"), inv)
+    for p in iter_files(root, excludes, rel_to):
+        f = os.path.basename(p)
+        if os.path.isfile(root) or os.path.splitext(f)[1].lower() in CERT_EXT \
+                or f in ("authorized_keys", "known_hosts") or (f.startswith("id_") and f.endswith(".pub")):
+            total += scan_file(p, os.path.relpath(p, rel_to).replace(os.sep, "/"), inv)
     return total
 
 

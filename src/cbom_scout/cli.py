@@ -87,6 +87,17 @@ def _rel_base(p: str) -> str:
     return ap if os.path.isdir(ap) else os.path.dirname(ap)
 
 
+def _ignore_file(path: str, rel_to: str, explicit: Optional[str]) -> list[str]:
+    """.cbomignore (gitignore 와 비슷한 한 줄 한 패턴) 을 읽는다. 패턴은 rel_to 기준 경로."""
+    candidates = [explicit] if explicit else [os.path.join(rel_to, ".cbomignore"),
+                                              os.path.join(path, ".cbomignore")]
+    for c in candidates:
+        if c and os.path.isfile(c):
+            with open(c, encoding="utf-8") as fh:
+                return [ln.strip() for ln in fh if ln.strip() and not ln.strip().startswith("#")]
+    return []
+
+
 def cmd_scan(args) -> int:
     from .scanners.code import scan_code
     from .scanners.certs import scan_certs
@@ -98,10 +109,17 @@ def cmd_scan(args) -> int:
             print(f"경로 없음: {p}", file=sys.stderr)
             return 2
         rel_to = _rel_base(p)
+        excludes = list(args.exclude or []) + _ignore_file(p, rel_to, args.ignore_file)
+        # 명시적으로 지정한 스캔 경로 자체를 가리는 패턴은 무시한다 (예: examples/ 를 직접 스캔)
+        root_rel = os.path.relpath(os.path.abspath(p), rel_to).replace(os.sep, "/")
+        if root_rel not in (".", ""):
+            from .scanners.code import is_excluded
+            excludes = [e for e in excludes if not is_excluded(root_rel + "/", [e])
+                        and not is_excluded(root_rel, [e])]
         if not args.no_code:
-            scan_code(p, inv, rel_to=rel_to)
+            scan_code(p, inv, rel_to=rel_to, excludes=excludes)
         if not args.no_certs:
-            scan_certs(p, inv, rel_to=rel_to)
+            scan_certs(p, inv, rel_to=rel_to, excludes=excludes)
     targets = _targets(args)
     if targets:
         from .scanners.tls import scan_tls
@@ -154,6 +172,9 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--no-code", action="store_true", help="소스코드 스캔 끄기")
     s.add_argument("--no-certs", action="store_true", help="인증서·키 파일 스캔 끄기")
     s.add_argument("--merge", action="append", metavar="CBOM", help="다른 도구가 만든 CBOM 을 함께 합치기")
+    s.add_argument("--exclude", action="append", metavar="GLOB",
+                   help="제외할 경로 패턴 (여러 번 지정 가능, 예: tests/ '*.min.js')")
+    s.add_argument("--ignore-file", metavar="FILE", help="제외 패턴 파일 (기본: .cbomignore)")
     s.add_argument("-o", "--output", default="cbom.json", help="CBOM 출력 경로 (기본: cbom.json)")
     _common_out(s)
     s.set_defaults(func=cmd_scan)

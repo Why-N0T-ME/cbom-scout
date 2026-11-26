@@ -48,10 +48,24 @@ cbom-scout scan --tls-file endpoints.txt -o tls-cbom.json
 # 신규 서비스용 엄격 정책 (양자 취약 공개키도 즉시 실패)
 cbom-scout scan . --policy strict
 
+# 테스트·생성물 제외 (저장소 루트의 .cbomignore 도 자동으로 읽음)
+cbom-scout scan . --exclude tests/ --exclude "*.min.js"
+
 # 여러 CBOM 합치기 → 전사 인벤토리
 cbom-scout merge team-a.json team-b.json cbomkit-output.json -o company.json
 cbom-scout check company.json --html company-report.html --fail-on never
 ```
+
+`.cbomignore` 예시 (한 줄에 하나, 저장소 루트 기준):
+
+```
+tests/
+examples/
+third_party/
+*.min.js
+```
+
+제외된 폴더라도 `cbom-scout scan examples/demo-app` 처럼 직접 지정하면 스캔합니다.
 
 종료 코드: `0` 통과, `1` 정책 위반(`--fail-on` 기준), `2` 사용법 오류.
 
@@ -164,6 +178,12 @@ src/cbom_scout/
 - [ ] 컨테이너 이미지 스캔 (패키지된 OpenSSL 버전·인증서)
 - [ ] SARIF 출력 → GitHub Code Scanning 연동
 - [ ] KCMVP 검증 모듈 목록과 대조
+
+## 릴리스 만들기 (관리자용)
+
+1. `docs/releases/vX.Y.Z.md` 에 릴리스 설명을 쓰고 커밋합니다.
+2. GitHub **Actions → Release → Run workflow** 에서 버전(`v0.1.0` 등)을 입력해 실행합니다.
+3. 워크플로가 테스트를 돌린 뒤 태그와 릴리스를 만들고, 다른 저장소가 쓰는 `v0` 같은 주 버전 태그도 최신 릴리스로 옮깁니다.
 
 ## 개발
 

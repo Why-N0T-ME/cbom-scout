@@ -6,7 +6,7 @@
 |---:|---:|---:|---:|---:|
 | 29 | 24 | 15 | 3 | 40 |
 
-정책 결과: 🔴 실패 5 · 🟠 경고 14 · 🔵 참고 4 · 🟢 통과 6
+정책 결과: 🔴 실패 5 · 🟠 경고 14 · 🔵 참고 3 · 🟢 통과 7
 
 ## 조치가 필요한 자산
 
@@ -34,15 +34,15 @@
 | 🔵 참고 | **AES** | 알고리즘 | 대칭키·해시 상향 권장 | 대칭키·해시 상향 권장 (AES-256, SHA-384 이상) — 키 길이 미확인 → AES-256 확인 필요 | `examples/demo-app/src/payment.py:26` |
 | 🔵 참고 | **AES-GCM** | 알고리즘 | 대칭키·해시 상향 권장 | 대칭키·해시 상향 권장 (AES-256, SHA-384 이상) — 키 길이 미확인 → AES-256 확인 필요 | `examples/demo-app/src/payment.py:31` |
 | 🔵 참고 | **SHA-256** | 알고리즘 | 대칭키·해시 상향 권장 | 대칭키·해시 상향 권장 (AES-256, SHA-384 이상) — 현재 허용, 장기적으로 SHA-384 이상 권장 | `examples/demo-app/certs/api.crt`, `examples/demo-app/src/AuthService.java:13`, `examples/demo-app/src/payment.py:22` |
-| 🔵 참고 | **TLS examples/demo-app/config/nginx.conf:3** | 프로토콜 | 판정 불가 | 자동 판정 불가: 수동 확인 필요 — TLS 1.3 허용 (하이브리드 그룹 설정은 별도 확인) | `examples/demo-app/config/nginx.conf:3` |
 
-<details><summary>통과한 자산 6개</summary>
+<details><summary>통과한 자산 7개</summary>
 
 - AES-256-GCM (대칭키·해시 충분)
 - ML-KEM (양자내성)
 - ML-KEM-768 (양자내성)
 - SHA-384 (대칭키·해시 충분)
 - SHA-512 (대칭키·해시 충분)
+- TLS examples/demo-app/config/nginx.conf:3 (기준 충족)
 - X25519MLKEM768 (하이브리드 (전환기 권장))
 
 </details>

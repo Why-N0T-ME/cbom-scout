@@ -9,6 +9,9 @@ inputs:
   path:
     description: "스캔할 경로 (공백으로 여러 개)"
     default: "."
+  exclude:
+    description: "제외할 경로 패턴 (공백 또는 줄바꿈 구분, 예: tests/ docs/). 저장소 루트의 .cbomignore 도 자동으로 읽는다"
+    default: ""
   tls-targets:
     description: "TLS 엔드포인트 목록 (공백 또는 줄바꿈 구분, 예: api.example.com:443)"
     default: ""
@@ -56,6 +59,7 @@ runs:
       env:
         IN_PATH: ${{ inputs.path }}
         IN_TLS: ${{ inputs.tls-targets }}
+        IN_EXCLUDE: ${{ inputs.exclude }}
         IN_TLS_FILE: ${{ inputs.tls-file }}
         IN_POLICY: ${{ inputs.policy }}
         IN_FAIL_ON: ${{ inputs.fail-on }}
@@ -65,6 +69,7 @@ runs:
         args=(scan)
         if [ -n "$IN_PATH" ]; then read -r -a paths <<< "$IN_PATH"; args+=("${paths[@]}"); fi
         for t in $IN_TLS; do args+=(--tls "$t"); done
+        for e in $IN_EXCLUDE; do args+=(--exclude "$e"); done
         if [ -n "$IN_TLS_FILE" ]; then args+=(--tls-file "$IN_TLS_FILE"); fi
         args+=(--policy "$IN_POLICY" --fail-on "$IN_FAIL_ON" -o "$IN_OUTPUT")
         args+=(--markdown cbom-report.md --html cbom-report.html -v)

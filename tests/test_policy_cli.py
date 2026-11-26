@@ -80,3 +80,16 @@ def test_github_summary(tmp_path, monkeypatch):
     monkeypatch.setenv("GITHUB_STEP_SUMMARY", str(summary))
     main(["scan", DEMO, "-o", str(tmp_path / "c.json"), "--fail-on", "never"])
     assert "판정" in summary.read_text(encoding="utf-8")
+
+
+def test_cbomignore_and_explicit_path(tmp_path, monkeypatch):
+    monkeypatch.delenv("GITHUB_STEP_SUMMARY", raising=False)
+    (tmp_path / "app").mkdir()
+    (tmp_path / "examples").mkdir()
+    (tmp_path / "app" / "a.py").write_text("import hashlib\nhashlib.sha384(b'')\n", encoding="utf-8")
+    (tmp_path / "examples" / "bad.py").write_text("import hashlib\nhashlib.md5(b'')\n", encoding="utf-8")
+    (tmp_path / ".cbomignore").write_text("# 예제 제외\nexamples/\n", encoding="utf-8")
+    monkeypatch.chdir(tmp_path)
+    assert main(["scan", ".", "-o", "c.json"]) == 0          # examples 는 무시 → 통과
+    # 제외된 폴더라도 직접 지정하면 스캔한다
+    assert main(["scan", "examples", "-o", "e.json"]) == 1

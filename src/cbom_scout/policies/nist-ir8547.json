@@ -34,6 +34,10 @@
     "symmetric-ok": {
       "action": "pass",
       "message": "양자 환경에서도 충분한 대칭키·해시"
+    },
+    "ok": {
+      "action": "pass",
+      "message": "설정이 기준을 충족"
     }
   },
   "default": {

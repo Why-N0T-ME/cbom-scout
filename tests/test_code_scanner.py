@@ -86,3 +86,41 @@ def test_spec_parsers():
     assert parse_cipher_spec("chacha20-poly1305")[0].name == "ChaCha20-Poly1305"
     assert [h.name for h in parse_sig_spec("SHA256withRSA")] == ["SHA-256", "RSA"]
     assert parse_sig_spec("ML-DSA-65")[0].name == "ML-DSA-65"
+
+
+def test_json_and_unrelated_groups_not_flagged(tmp_path):
+    (tmp_path / "data.json").write_text('{"ctx": "hashlib.md5(x)", "Groups": "admins"}', encoding="utf-8")
+    (tmp_path / "app.yaml").write_text("Groups = admins:users\n", encoding="utf-8")
+    inv = Inventory()
+    scan_code(str(tmp_path), inv)
+    assert not inv.components
+
+
+def test_openssl_cnf_groups(tmp_path):
+    n = names(scan_snippet(tmp_path, "openssl.cnf", "Groups = X25519MLKEM768:X25519:secp384r1\n"))
+    assert {"X25519MLKEM768", "X25519", "ECDH-P-384"} <= n
+
+
+def test_java_default_ecb(tmp_path):
+    inv = scan_snippet(tmp_path, "C.java", 'Cipher c = Cipher.getInstance("AES");\n')
+    assert "AES-ECB" in names(inv)
+    assert get_prop(inv.components["crypto/algorithm/AES-ECB"], "status") == "broken"
+
+
+def test_good_tls_config_is_ok(tmp_path):
+    inv = scan_snippet(tmp_path, "nginx.conf", "ssl_protocols TLSv1.2 TLSv1.3;\n")
+    proto = [c for c in inv.components.values() if c["cryptoProperties"]["assetType"] == "protocol"][0]
+    assert get_prop(proto, "status") == "ok"
+
+
+def test_excludes(tmp_path):
+    (tmp_path / "src").mkdir()
+    (tmp_path / "tests").mkdir()
+    (tmp_path / "src" / "a.py").write_text("import hashlib\nhashlib.md5(b'')\n", encoding="utf-8")
+    (tmp_path / "tests" / "t.py").write_text("import hashlib\nhashlib.sha1(b'')\n", encoding="utf-8")
+    (tmp_path / "src" / "x.min.js").write_text("createHash('md5')\n", encoding="utf-8")
+    inv = Inventory()
+    scan_code(str(tmp_path), inv, excludes=["tests/", "*.min.js"])
+    assert names(inv) == {"MD5"}
+    locs = {o["location"] for o in inv.components["crypto/algorithm/MD5"]["evidence"]["occurrences"]}
+    assert locs == {"src/a.py"}
