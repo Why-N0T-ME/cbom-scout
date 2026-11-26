@@ -27,7 +27,9 @@ cbom-scout = "cbom_scout.cli:main"
 where = ["src"]
 
 [tool.setuptools.package-data]
-cbom_scout = ["policies/*.json"]
+cbom_scout = ["policies/*.json", "data/*.json"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+# 말뭉치 파일은 스캔 대상 예제일 뿐 테스트가 아니다
+addopts = "--ignore=tests/corpus"

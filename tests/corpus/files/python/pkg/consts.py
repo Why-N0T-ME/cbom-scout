@@ -1,0 +1,1 @@
+LEGACY_HASH = "sha1"

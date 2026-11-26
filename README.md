@@ -97,7 +97,7 @@ cbom-scout scan . --baseline baseline.json --markdown report.md -v
 
 ```bash
 cbom-scout scan examples/demo-app -v
-# cbom-scout: 자산 29개 (알고리즘 24, 취약 15, PQC·하이브리드 3) · 실패 5 / 경고 14 / 참고 4 / 통과 6 → 실패
+# cbom-scout: 자산 28개 (알고리즘 23, 취약 15, PQC·하이브리드 3) · 실패 5 / 경고 14 / 참고 2 / 통과 7 → 실패
 ```
 
 결과 예시: [docs/sample-report.md](docs/sample-report.md) · [docs/sample-cbom.json](docs/sample-cbom.json)
@@ -151,6 +151,10 @@ jobs:
 cbom-scout scan . --policy my-company.json
 ```
 
+도입 초기에는 `"min_confidence": 0.7` 처럼 **탐지 신뢰도 기준**을 넣을 수 있습니다. 신뢰도가 기준 미만인 자산
+(예: 후보 값이 여럿인 변수, 로그 문자열 속 PQC 이름)은 CBOM·리포트에 남기되 조치를 `info` 까지만 올려 빌드를 막지 않고,
+메시지 끝에 `(탐지 신뢰도 낮음 — 판정 보류)` 가 붙습니다. 내장 정책에는 이 키가 없어 기본 동작은 그대로입니다.
+
 ## CBOM 출력 형식
 
 [CycloneDX 1.6](https://cyclonedx.org/) 스키마를 따르며, 테스트에서 공식 JSON 스키마로 검증합니다.
@@ -166,11 +170,28 @@ cbom-scout scan . --policy my-company.json
                             "nistQuantumSecurityLevel": 0, "cryptoFunctions": ["keygen"]},
     "oid": "1.2.840.113549.1.1.1"
   },
-  "evidence": {"occurrences": [{"location": "src/payment.py", "line": 10}]},
+  "evidence": {
+    "identity": [{"field": "name", "confidence": 0.9, "concludedValue": "RSA-2048",
+                  "methods": [{"technique": "ast-fingerprint", "confidence": 0.9}]}],
+    "occurrences": [{"location": "src/payment.py", "line": 10, "symbol": "rsa.generate_private_key"}]
+  },
   "properties": [{"name": "cbom-scout:status", "value": "quantum-vulnerable"},
+                 {"name": "cbom-scout:scope", "value": "production"},
                  {"name": "cbom-scout:policy-action", "value": "warn"}]
 }
 ```
+
+**탐지 근거는 CycloneDX 표준 필드**에 남겨 Dependency-Track 같은 다른 도구도 읽을 수 있습니다.
+
+| 필드 | 뜻 |
+|---|---|
+| `evidence.identity[].methods[].technique` | 탐지 방식. `ast-fingerprint`(Python 구문 트리), `source-code-analysis`(정규식·설정 파일) |
+| `evidence.identity[].confidence`, `methods[].confidence` | 탐지 신뢰도 0~1. 방식별 최댓값과 전체 최댓값 |
+| `evidence.occurrences[].symbol` | 근거가 된 API 이름 (별칭을 푼 이름. 예: `from hashlib import md5` → `hashlib.md5`) |
+| `cbom-scout:scope` 속성 | 발견 위치 분류 `production` / `test` / `example` (스캔 루트 기준). 판정·종료 코드는 바꾸지 않음 |
+
+신뢰도 기준표와 테스트·예제 경로 패턴은 [src/cbom_scout/data/detection.json](src/cbom_scout/data/detection.json) 에 있습니다.
+인증서·TLS 스캐너로만 나온 자산에는 `identity` 를 달지 않습니다.
 
 알고리즘·인증서·키 자료·프로토콜이 `dependencies` 로 연결되어, "이 인증서는 어떤 키 알고리즘과 서명 알고리즘을 쓰는가"를 따라갈 수 있습니다.
 
@@ -181,18 +202,37 @@ src/cbom_scout/
 ├── catalog.py          알고리즘 지식 베이스 (상태·primitive·양자 보안 수준·KpqC 포함)
 ├── inventory.py        발견 결과 → CycloneDX 구성요소, 중복 제거·병합
 ├── scanners/
-│   ├── code.py         언어별 정규식 규칙 + 설정 파일 + 커밋된 비밀키
+│   ├── code.py         언어별 규칙 + 설정 파일 + 커밋된 비밀키 (엔진 선택)
+│   ├── pyast.py        Python 구문 트리 분석 (API 지식은 data/python_api.json)
+│   ├── context.py      C 계열 언어의 주석·문자열 문맥 판정
 │   ├── certs.py        인증서·키 파일 (cryptography 라이브러리)
 │   └── tls.py          TLS 엔드포인트 (ssl + OpenSSL 3.5 s_client)
 ├── cbom.py             CBOM 직렬화·병합
-├── policy.py           정책 평가 (fail_after 날짜 승격, overrides)
+├── detection.py        탐지 신뢰도·테스트/예제 범위 (기준값은 data/detection.json)
+├── policy.py           정책 평가 (fail_after 날짜 승격, overrides, min_confidence)
 ├── report.py           마크다운·HTML 리포트
 └── cli.py              scan / check / merge
 ```
 
 ## 한계와 보완 방법
 
-- **정규식 기반 정적 분석**이라 데이터 흐름(변수로 넘어온 알고리즘 이름 등)은 추적하지 못합니다. 언어별 정밀 분석은 [CBOMkit](https://github.com/cbomkit) 결과를 `merge` 로 합치세요.
+- **코드 분석 방식** (기본 `--engine auto`)
+  - **Python** 은 구문 트리(AST)로 분석합니다. 주석·docstring·문자열 속 API 는 무시하고, import 별칭
+    (`import hashlib as hl`, `from hashlib import md5`), 여러 줄 호출, `Cipher(algorithms.X, modes.Y)` 결합,
+    **같은 파일 안**의 상수·변수·기본값 인자(`HASH = "sha1"; hashlib.new(HASH)`)를 해석합니다.
+    후보 값이 여럿이거나 기본값 인자로만 정해지면 신뢰도 0.6 으로 모든 후보를 기록합니다.
+    구문 오류 파일(예: Python 2)은 정규식으로 대체하고 `-v` 에서 경고합니다.
+  - **Java/Kotlin·Go·JS/TS·C/C++·C#** 은 정규식 규칙을 쓰되 주석(`//`, `/* */`)과 문자열 리터럴 안의 매치는 버립니다.
+    변수로 넘긴 알고리즘 이름은 아직 해석하지 못합니다.
+  - 문자열 속 PQC 이름(`"ML-KEM-768 지원 예정"`)은 신뢰도 0.3 으로 기록합니다. 커밋된 비밀키 헤더는 주석 안에 있어도 탐지합니다.
+  - `--engine regex` 로 예전 줄 단위 정규식 동작으로 되돌릴 수 있습니다(비교·비상용).
+- **아직 못 하는 것**: 파일·함수 경계를 넘는 데이터 흐름(다른 모듈의 상수, 함수 인자로 전달), 클래스 속성(`self.ALG`),
+  f-string·문자열 연결, 외부 라이브러리 **내부**의 암호 호출. 문맥 판정이 다루지 않는 문법: JS 템플릿 `${}` 보간 안쪽,
+  JS 정규식 리터럴, C++ 원시 문자열 `R"(…)"`, Kotlin·Scala 중첩 블록 주석, C 전처리기 `#if 0`.
+  언어별 정밀 분석은 [CBOMkit](https://github.com/cbomkit) 결과를 `merge` 로 합치세요.
+- **탐지 품질 측정**: [tests/corpus/](tests/corpus/) 에 정답 라벨이 달린 평가 말뭉치가 있습니다.
+  `python tests/corpus/evaluate.py` 가 엔진별(`auto`, `regex`)·언어별·범주별(주석, 문자열, 별칭, 간접 상수 등) 정밀도·재현율을 냅니다.
+  결과에는 사람이 검수한(`reviewed: true`) 라벨 수와 미검수 수가 함께 나옵니다.
 - 설정으로만 정해지는 암호(런타임 협상)는 **TLS 스캔**으로, 저장소 밖의 키는 **HSM·KMS 조회**(로드맵)로 보완해야 합니다.
 - 망분리 구간·SaaS·벤더 제품은 자동 스캔이 닿지 않습니다. 공급사에 CBOM 제공을 요구하고 `merge` 로 합치세요.
 - TLS 하이브리드 키 교환 확인은 실행 환경에 **OpenSSL 3.5 이상**이 필요합니다. 없으면 `key-exchange-source: unavailable` 로 표시됩니다.
