@@ -18,7 +18,7 @@ FILES = os.path.join(CORPUS, "files")
 
 
 def labels():
-    return evaluate.load_labels(LABELS, FILES, allow_unreviewed=True)
+    return evaluate.load_labels(LABELS, FILES)
 
 
 def test_corpus_minimum_size():
@@ -49,28 +49,32 @@ def test_label_format():
 
 def test_label_errors_exit_2(tmp_path, capsys):
     bad = json.load(open(LABELS, encoding="utf-8"))
-    bad["labels"] = [dict(bad["labels"][0], reviewed=True), dict(bad["labels"][1], reviewed=True)]
+    bad["labels"] = [bad["labels"][0], bad["labels"][1]]
     bad["labels"].append(dict(bad["labels"][0], file="python/없는파일.py"))
     bad["labels"].append(dict(bad["labels"][0], line=9999))
-    bad["labels"].append(dict(bad["labels"][0], reviewed=False))
     p = tmp_path / "bad.json"
     p.write_text(json.dumps(bad, ensure_ascii=False), encoding="utf-8")
     assert evaluate.main(["--labels", str(p), "--files", FILES]) == 2
     err = capsys.readouterr().err
-    assert "#2" in err and "#3" in err and "#4" in err and "#0" not in err
+    assert "#2" in err and "#3" in err and "#0" not in err
 
 
-def test_unreviewed_labels_rejected_by_default(tmp_path, capsys):
-    """사람 검수(reviewed) 표시가 하나라도 빠지면 지표를 내지 않는다."""
-    lbs = json.load(open(LABELS, encoding="utf-8"))
-    if all(x["reviewed"] is True for x in lbs["labels"]):
-        pytest.skip("모든 라벨이 검수됨")
-    assert evaluate.main(["--labels", LABELS, "--files", FILES]) == 2
+def test_review_counts_reported(tmp_path, capsys):
+    """미검수 라벨도 채점하되 검수·미검수 수를 함께 낸다."""
+    doc = json.load(open(LABELS, encoding="utf-8"))
+    for i, x in enumerate(doc["labels"]):
+        x["reviewed"] = i < 3
+    p = tmp_path / "l.json"
+    p.write_text(json.dumps(doc, ensure_ascii=False), encoding="utf-8")
+    res = evaluate.evaluate(str(p), FILES)
+    assert res["labels"]["reviewed"] == 3
+    assert res["labels"]["unreviewed"] == len(doc["labels"]) - 3
+    assert f"사람 검수: 검수 3개 · 미검수 {len(doc['labels']) - 3}개" in evaluate.to_markdown(res)
 
 
 def test_deterministic_and_targets(tmp_path):
-    a = evaluate.evaluate(LABELS, FILES, allow_unreviewed=True)
-    b = evaluate.evaluate(LABELS, FILES, allow_unreviewed=True)
+    a = evaluate.evaluate(LABELS, FILES)
+    b = evaluate.evaluate(LABELS, FILES)
     assert a == b
     md = evaluate.to_markdown(a)
     assert md == evaluate.to_markdown(b) and "phase later" in md
@@ -88,7 +92,7 @@ def test_deterministic_and_targets(tmp_path):
 def test_cli_outputs(tmp_path):
     out = tmp_path / "r.json"
     md = tmp_path / "r.md"
-    r = subprocess.run([sys.executable, os.path.join(CORPUS, "evaluate.py"), "--allow-unreviewed",
+    r = subprocess.run([sys.executable, os.path.join(CORPUS, "evaluate.py"),
                         "--json", str(out), "--markdown", str(md)], capture_output=True, text=True, encoding="utf-8")
     assert r.returncode == 0, r.stderr
     res = json.loads(out.read_text(encoding="utf-8"))

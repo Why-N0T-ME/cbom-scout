@@ -232,7 +232,7 @@ src/cbom_scout/
   언어별 정밀 분석은 [CBOMkit](https://github.com/cbomkit) 결과를 `merge` 로 합치세요.
 - **탐지 품질 측정**: [tests/corpus/](tests/corpus/) 에 정답 라벨이 달린 평가 말뭉치가 있습니다.
   `python tests/corpus/evaluate.py` 가 엔진별(`auto`, `regex`)·언어별·범주별(주석, 문자열, 별칭, 간접 상수 등) 정밀도·재현율을 냅니다.
-  라벨은 사람이 검수(`reviewed: true`)해야 지표가 나옵니다.
+  결과에는 사람이 검수한(`reviewed: true`) 라벨 수와 미검수 수가 함께 나옵니다.
 - 설정으로만 정해지는 암호(런타임 협상)는 **TLS 스캔**으로, 저장소 밖의 키는 **HSM·KMS 조회**(로드맵)로 보완해야 합니다.
 - 망분리 구간·SaaS·벤더 제품은 자동 스캔이 닿지 않습니다. 공급사에 CBOM 제공을 요구하고 `merge` 로 합치세요.
 - TLS 하이브리드 키 교환 확인은 실행 환경에 **OpenSSL 3.5 이상**이 필요합니다. 없으면 `key-exchange-source: unavailable` 로 표시됩니다.

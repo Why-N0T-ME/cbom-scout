@@ -305,7 +305,7 @@ cbom-scout 를 CI 에 붙인 보안 담당자는 주석으로 막아 둔 옛 코
 | ID | 기준 | 검증 방법 |
 |---|---|---|
 | AC-60 | 말뭉치와 정답 라벨이 `tests/` 아래에 있고 최소 규모를 만족한다. | 라벨 파일을 읽어 센다: 양성 라벨(있어야 할 발견) 80개 이상, 음성 라벨(없어야 할 발견이 있는 줄) 40개 이상. 언어 Python·Java·Go·JS/TS·C/C++·C#·설정 파일 각각 양성 5개 이상. `phase: 1` 범주별 최소: `direct` 20, `comment` 10(Python 3·그 밖 7 이상), `docstring` 5, `string-literal` 10, `lookalike`(암호처럼 보이지만 암호가 아닌 코드, 예: 변수명 `md5sum`, 문자열 `"aes"` 를 쓰는 비암호 함수) 5, `alias` 5, `multiline` 5, `indirect-const` 8, `indirect-default` 3, `test-path` 5, `manifest` 10. `phase: later` 범주 `cross-function`(함수 경계를 넘는 전달) 5 이상. |
-| AC-61 | 라벨 형식이 정해져 있고 닫힌 세계로 채점한다. 라벨은 사람이 검수한다. | 라벨 한 건은 최소 `file`(말뭉치 루트 기준 `/` 경로), `line`, `name`(CBOM 구성요소 이름, 라이브러리는 purl), `label`(`positive`/`negative`), `category`, `phase`(`1`/`later`), `source`(`handwritten` 또는 참고한 벤치마크 이름, 예: `CryptoAPI-Bench`), `reviewed`(사람 검수 여부, 모든 라벨이 `true`)를 가진다. 말뭉치 파일 안의 탐지 중 양성 라벨과 (file, line, name) 이 맞지 않는 것은 모두 오탐(FP)으로 센다. 없는 파일이나 범위를 벗어난 줄을 가리키는 라벨, `reviewed` 가 `true` 가 아닌 라벨이 있으면 평가 도구가 종료 코드 2 와 그 라벨 위치를 출력한다. |
+| AC-61 | 라벨 형식이 정해져 있고 닫힌 세계로 채점한다. 라벨은 사람이 검수한다. | 라벨 한 건은 최소 `file`(말뭉치 루트 기준 `/` 경로), `line`, `name`(CBOM 구성요소 이름, 라이브러리는 purl), `label`(`positive`/`negative`), `category`, `phase`(`1`/`later`), `source`(`handwritten` 또는 참고한 벤치마크 이름, 예: `CryptoAPI-Bench`), `reviewed`(사람 검수 여부, `true`/`false`)를 가진다. 말뭉치 파일 안의 탐지 중 양성 라벨과 (file, line, name) 이 맞지 않는 것은 모두 오탐(FP)으로 센다. 없는 파일이나 범위를 벗어난 줄을 가리키는 라벨이 있으면 평가 도구가 종료 코드 2 와 그 라벨 위치를 출력한다. 미검수(`reviewed: false`) 라벨도 채점하되, 결과(마크다운·JSON)에 검수한 라벨 수와 미검수 수를 함께 표시한다 (2026-11-27 사용자 결정). |
 | AC-62 | 평가 도구는 엔진별(`auto`, `regex`) 지표를 범주별로 결정적으로 낸다. | 평가 도구(위치·명령은 확인 필요 12)를 두 번 실행 → 전체·언어별·범주별 TP/FP/FN/정밀도/재현율 표(마크다운)와 같은 내용의 JSON 이 나오고 두 실행 결과가 같다. `phase: later` 라벨은 별도 줄로 집계된다. |
 | AC-63 | 1차 개선 목표를 수치로 만족한다(기준치는 확인 필요 12). | 말뭉치(테스터가 추가한 비공개 사례 포함)에서 `auto` 엔진: `comment`·`docstring`·`string-literal`·`lookalike` 범주 FP = 0; 전체와 언어별 재현율이 `regex` 엔진 이상; `alias`·`multiline`·`indirect-const` 범주 재현율 ≥ 0.9; 전체 정밀도가 `regex` 엔진 이상. |
 | AC-64 | 성능 저하가 허용 범위 안이다. | 테스트 중에 생성한 합성 트리(Python 300개·Java 300개·JS 300개 파일, 각 200줄, 암호 호출 섞음)를 같은 기계에서 `--engine regex` 와 기본 엔진으로 각각 스캔 → 기본 엔진 소요 시간 ≤ regex 엔진의 3배 (각 3회 중앙값). |
@@ -344,6 +344,8 @@ cbom-scout 를 CI 에 붙인 보안 담당자는 주석으로 막아 둔 옛 코
 | 1b | AC-40 ~ AC-50, 그리고 AC-30 의 `m.json`(AC-50) 검증, AC-56 의 AC-40 입력, AC-58 의 AC-40·AC-47 입력, AC-60 의 `manifest` 범주 10건 |
 
 1a 에서 AC-56 은 AC-34 트리만, AC-58 은 AC-8·AC-9·AC-17 입력만으로 검증한다.
+
+AC-61 변경 (2026-11-27 사용자 결정): 라벨 전부를 사람이 검수하기는 어려우므로, 애매한 라벨(음성 사례, 주석·문자열·docstring 안, 변수로 넘긴 알고리즘)과 나머지 중 무작위 20개만 사용자가 검수해 `reviewed: true` 로 표시한다. 평가 도구는 미검수 라벨이 있어도 지표를 내고, 검수·미검수 수를 함께 표시한다.
 
 ## 확인 필요 (사용자 결정)
 

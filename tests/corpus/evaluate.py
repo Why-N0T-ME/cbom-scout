@@ -8,8 +8,8 @@
 모두 오탐(FP)이다. 음성 라벨은 그 오탐이 어느 범주(주석·문자열 등)인지 알려 준다.
 phase 가 later 인 양성 라벨은 다음 단계 목표라 전체 지표에서 빼고 따로 집계한다.
 
-라벨이 가리키는 파일이 없거나 줄이 범위를 벗어나거나, reviewed 가 true 가 아니면
-종료 코드 2 와 함께 그 라벨 위치를 출력한다.
+라벨이 가리키는 파일이 없거나 줄이 범위를 벗어나면 종료 코드 2 와 함께 그 라벨 위치를 출력한다.
+reviewed 는 사람이 라벨을 확인했는지 표시한다. 미검수 라벨도 채점하되, 결과에 검수·미검수 수를 함께 적는다.
 """
 from __future__ import annotations
 
@@ -44,7 +44,7 @@ class LabelError(Exception):
     pass
 
 
-def load_labels(path: str, files_root: str, allow_unreviewed: bool = False) -> list:
+def load_labels(path: str, files_root: str) -> list:
     with open(path, encoding="utf-8") as fh:
         doc = json.load(fh)
     labels = doc["labels"] if isinstance(doc, dict) else doc
@@ -60,8 +60,8 @@ def load_labels(path: str, files_root: str, allow_unreviewed: bool = False) -> l
             errors.append(f"{where}: label 은 positive/negative")
         if str(lb["phase"]) not in ("1", "later"):
             errors.append(f"{where}: phase 는 1/later")
-        if lb["reviewed"] is not True and not allow_unreviewed:
-            errors.append(f"{where}: 사람 검수(reviewed: true)가 안 된 라벨")
+        if not isinstance(lb["reviewed"], bool):
+            errors.append(f"{where}: reviewed 는 true/false")
         fp = os.path.join(files_root, *str(lb["file"]).split("/"))
         if not os.path.isfile(fp):
             errors.append(f"{where}: 파일 없음")
@@ -142,10 +142,12 @@ def score(labels: list, found: set, scopes: dict) -> dict:
     }
 
 
-def evaluate(labels_path: str, files_root: str, engines=ENGINES, allow_unreviewed: bool = False) -> dict:
-    labels = load_labels(labels_path, files_root, allow_unreviewed)
+def evaluate(labels_path: str, files_root: str, engines=ENGINES) -> dict:
+    labels = load_labels(labels_path, files_root)
     out = {"labels": {"positive": sum(1 for lb in labels if lb["label"] == "positive"),
-                      "negative": sum(1 for lb in labels if lb["label"] == "negative")},
+                      "negative": sum(1 for lb in labels if lb["label"] == "negative"),
+                      "reviewed": sum(1 for lb in labels if lb["reviewed"] is True),
+                      "unreviewed": sum(1 for lb in labels if lb["reviewed"] is not True)},
            "engines": {}}
     for e in engines:
         out["engines"][e] = score(labels, *detections(files_root, e))
@@ -160,6 +162,7 @@ def to_markdown(res: dict) -> str:
     engines = list(res["engines"])
     L = ["# 평가 말뭉치 결과", "",
          f"라벨: 양성 {res['labels']['positive']}개 · 음성 {res['labels']['negative']}개 (닫힌 세계 채점)", "",
+         f"사람 검수: 검수 {res['labels']['reviewed']}개 · 미검수 {res['labels']['unreviewed']}개", "",
          "## 전체 (phase 1)", "", "| 엔진 | TP | FP | FN | 정밀도 | 재현율 |", "|---|---:|---:|---:|---:|---:|"]
     for e in engines:
         m = res["engines"][e]["overall"]
@@ -186,8 +189,6 @@ def main(argv=None) -> int:
     ap.add_argument("--engines", default=",".join(ENGINES))
     ap.add_argument("--json", help="결과 JSON 저장 경로")
     ap.add_argument("--markdown", help="결과 마크다운 저장 경로 (표준 출력에도 나옴)")
-    ap.add_argument("--allow-unreviewed", action="store_true",
-                    help="사람 검수 전 라벨로도 지표를 낸다 (개발 중 확인용)")
     a = ap.parse_args(argv)
     for stream in (sys.stdout, sys.stderr):
         if hasattr(stream, "reconfigure"):
@@ -196,7 +197,7 @@ def main(argv=None) -> int:
             except (ValueError, OSError):
                 pass
     try:
-        res = evaluate(a.labels, a.files, [e for e in a.engines.split(",") if e], a.allow_unreviewed)
+        res = evaluate(a.labels, a.files, [e for e in a.engines.split(",") if e])
     except LabelError as e:
         print(f"라벨 오류:\n{e}", file=sys.stderr)
         return 2
